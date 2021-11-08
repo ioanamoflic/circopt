@@ -1,0 +1,3 @@
+[submodule "quantify"]
+	path = quantify
+	url = git://github.com/ioanamoflic/quantify.git
