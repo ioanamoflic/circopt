@@ -91,6 +91,7 @@ class RoutingMultiple:
         for conf in self.configurations:
             circuit = self.decompose_toffolis_in_circuit(conf)
             circuit, process_time = GreedyRouter(circuit, self.device_graph).route()
+            # or better, string of letters?
             conf = "".join([str(strategy.value) for strategy in conf])
             csv_lines.append([self.nr_bits, conf, len(circuit.all_qubits()),
                               circuit_depth_before, len(circuit), process_time])
