@@ -18,7 +18,7 @@ class RoutingMultiple:
         self.no_decomp_sets = no_decomp_sets
         self.no_toffolis = self.get_number_of_toffolis()
         self.nr_bits = nr_bits
-        self.configurations = []
+        self.configurations = set()
 
     def get_number_of_toffolis(self) -> int:
         """
@@ -32,44 +32,47 @@ class RoutingMultiple:
 
         return counter
 
-    def get_random_decomposition_configuration(self):
+    def get_random_decomposition_configuration(self) -> None:
         """
-        Creates a list (size = no_decomp_sets) of unique Toffoli gates strategies to be applied at the decomposition step.
+        Creates a set (size = no_decomp_sets) of unique strategies to be applied at the decomposition step.
         """
         while len(self.configurations) < self.no_decomp_sets:
-            sample: List[ToffoliDecompType] = self.get_random_sample()
-            if sample not in self.configurations:
-                self.configurations.append(sample)
-        print('Generated configurations: ', self.configurations)
+            self.configurations.add(self.get_random_sample())
 
-    def get_random_sample(self) -> List[ToffoliDecompType]:
+    def get_random_sample(self) -> str:
         """
-        :return: return random sample of strategies for the given circuit.
+        :return: random sample of strategies for the given circuit in the form of a string.
         """
-        decompositions: List[ToffoliDecompType] = [ToffoliDecompType.RANDOM for toffoli in range(0, self.no_toffolis)]
+        decompositions: str = "".join(
+            [chr(ord('a') + ToffoliDecompType.RANDOM.value - 1) for gate in range(self.no_toffolis)])
         return decompositions
 
-    def decompose_toffolis_in_circuit(self, strategies: List[ToffoliDecompType]) -> cirq.Circuit:
+    def decompose_toffolis_in_circuit(self, strategies: str) -> cirq.Circuit:
         """
         Toffoli gate decomposition of the given circuit by a list of strategies to be applied on each gate.
-        :param strategies: List of strategies to be applied
+        :param strategies: strategies to be applied
         :return: decomposed circuit
         """
         new_circuit: cirq.Circuit = cirq.Circuit()
         strategy_count: int = 0
+
         for moment in self.circuit:
-            had_toffoli: bool = False
+
+            has_toffoli: bool = False
+
             for op in moment.operations:
-                if op.gate == cirq.TOFFOLI:
-                    had_toffoli = True
-                    qubits = op.qubits
-                    moments = td.ToffoliDecomposition(
-                        decomposition_type=strategies[strategy_count],
-                        qubits=qubits).decomposition()
-                    new_circuit.append(moments)
-                    strategy_count += 1
+                if isinstance(op.gate, cirq.ops.TOFFOLI):
+                    has_toffoli = True
                     break
-            if not had_toffoli:
+
+            if has_toffoli:
+                moments = td.ToffoliDecomposition.construct_decomposed_moments(cirq.Circuit(moment),
+                            ToffoliDecompType(ord(strategies[strategy_count]) - ord('a') + 1))
+                new_circuit.append(moments)
+
+                #what if there is more than one toffoli / moment? different decompositions for each?
+                strategy_count += 1
+            else:
                 new_circuit.append(moment)
 
         return new_circuit
@@ -77,9 +80,9 @@ class RoutingMultiple:
     def route_circuit_for_multiple_configurations(self) -> List[List[Union[str, int]]]:
         """
         Routes given circuit for each random configuration generated.
-        :return: List with results for each circuit - decomposition strategy list pair containing for each input:
+        :return: List with results for each circuit - decomposition strategy pair containing for each input:
          * number of adder bits
-         * Toffoli gates decomposing configuration
+         * Toffoli gates decomposition configuration
          * number of qubits of the output circuit
          * depth of the input circuit
          * depth of the output circuit
@@ -91,8 +94,6 @@ class RoutingMultiple:
         for conf in self.configurations:
             circuit = self.decompose_toffolis_in_circuit(conf)
             circuit, process_time = GreedyRouter(circuit, self.device_graph).route()
-            # or better, string of letters?
-            conf = "".join([str(strategy.value) for strategy in conf])
             csv_lines.append([self.nr_bits, conf, len(circuit.all_qubits()),
                               circuit_depth_before, len(circuit), process_time])
 
