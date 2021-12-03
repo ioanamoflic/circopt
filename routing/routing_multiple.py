@@ -12,7 +12,7 @@ class RoutingMultiple:
     Helper class for routing circuits on multiple Toffoli gate decompositions.
     """
 
-    def __init__(self, circuit: cirq.Circuit, device_graph: nx.Graph, no_decomp_sets: int, nr_bits: int):
+    def __init__(self, circuit: cirq.Circuit, device_graph: nx.Graph = None, no_decomp_sets: int = 100, nr_bits: int = 4):
         self.circuit = circuit
         self.device_graph = device_graph
         self.no_decomp_sets = no_decomp_sets
@@ -44,7 +44,7 @@ class RoutingMultiple:
         :return: random sample of strategies for the given circuit in the form of a string.
         """
         decompositions: str = "".join(
-            [chr(ord('a') + ToffoliDecompType.RANDOM.value - 1) for gate in range(self.no_toffolis)])
+            [chr(ord('a') + ToffoliDecompType.RANDOM.value) for gate in range(self.no_toffolis)])
         return decompositions
 
     def decompose_toffolis_in_circuit(self, strategies: str) -> cirq.Circuit:
@@ -61,7 +61,7 @@ class RoutingMultiple:
             has_toffoli: bool = False
 
             for op in moment.operations:
-                if isinstance(op.gate, cirq.ops.TOFFOLI):
+                if op.gate == cirq.TOFFOLI:
                     has_toffoli = True
                     break
 

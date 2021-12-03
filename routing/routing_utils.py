@@ -16,12 +16,13 @@ def plot_results(duration: np.ndarray, depths: np.ndarray, trials: int = 1, no_q
     qubit_range = np.arange(no_qubits) + offset
     fig, axs = plt.subplots(2)
     fig.suptitle('Routing results')
-    axs[0].set_xlabel('No. qubits')
+    axs[0].set_xlabel('Number of adder bits')
     axs[0].set_ylabel('Av. depth ratio')
     axs[0].plot(qubit_range, depths / trials)
 
-    axs[1].set_xlabel('No. qubits')
-    axs[1].set_ylabel('Av. time (seconds)')
+    axs[1].set_xlabel('Number of adder bits')
+    axs[1].set_ylabel('Av. routing process time (sec)')
     axs[1].plot(qubit_range, duration / trials)
     plt.show()
+
 

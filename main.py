@@ -1,22 +1,23 @@
-import quantify.mathematics as mathematics
+import gym
+import cirq
+from RL.circuit_env_decomp import CircuitEnv
+from quantify.mathematics.carry_ripple_4t_adder import CarryRipple4TAdder
 import cirq.contrib.routing as ccr
-from routing.routing_multiple import RoutingMultiple
-import csv
+import networkx as nx
+from RL.q_learning import QAgent
+from quantify.utils.counting_utils import count_toffoli_of_circuit
+import numpy as np
 
 
-def main():
-    device_graph = ccr.get_grid_device_graph(20, 20)
-
-    header = ['nrbits', 'toffoli_desc_conf', 'nr_qubits_output', 'depth_input', 'depth_output', 'process_time']
-    with open('data_letters2.csv', 'w', encoding='UTF8', newline='\n') as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
-        for nr_bits in range(4, 15):
-            circuit = mathematics.CarryRipple4TAdder(nr_bits, True).circuit
-            csv_lines = RoutingMultiple(circuit, device_graph, 100, nr_bits).route_circuit_for_multiple_configurations()
-            writer.writerows(csv_lines)
-            print("lines: ", csv_lines)
+def run():
+    bits: int = 5
+    device_graph: nx.Graph = ccr.get_grid_device_graph(20, 20)
+    circuit: cirq.Circuit = CarryRipple4TAdder(bits).circuit
+    env: gym.Env = CircuitEnv(circuit, device_graph)
+    agent = QAgent(env, max_iter=count_toffoli_of_circuit(circuit))
+    agent.train()
+    agent.show_evolution()
 
 
 if __name__ == '__main__':
-    main()
+    run()
