@@ -21,7 +21,7 @@ class QAgent:
         self.discount_factor: float = gamma
         self.learning_rate: float = lr
         self.rewards_per_episode = list()
-        self.Q_table: np.ndarray = np.zeros(shape=(10000, env.action_space.n))
+        self.Q_table: np.ndarray = np.zeros(shape=(1, env.action_space.n))
 
     def train(self) -> None:
         """
@@ -43,7 +43,7 @@ class QAgent:
 
                 next_state, reward, done, _ = self.env.step(action)
 
-                if next_state == self.Q_table.shape[0]:
+                if len(c.state_map_identity.keys()) >= self.Q_table.shape[0]:
                     self.Q_table = np.vstack([self.Q_table, np.zeros(self.env.action_space.n)])
 
                 self.Q_table[current_state, action] = (1 - self.learning_rate) * self.Q_table[
