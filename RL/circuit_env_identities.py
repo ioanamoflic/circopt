@@ -5,13 +5,15 @@ import networkx as nx
 import cirq
 from gym.spaces import Discrete
 import config as c
-import quantify.optimizers as cnc
 from optimization.TopLeftT import TopLeftT
 from optimization.TopRightT import TopRightT
 from optimization.TopLeftHadamard import TopLeftHadamard
 from optimization.OneHLeft2Right import OneHLeftTwoRight
-import utils
+
+import circopt_utils
 import numpy as np
+
+import quantify.optimizers as cnc
 
 
 class CircuitEnv(gym.Env):
@@ -29,7 +31,7 @@ class CircuitEnv(gym.Env):
         self.current_circuit: cirq.Circuit = starting_circuit
         self.done: bool = False
         self.current_config: List[int] = [0 for i in range(len(self.current_circuit))]
-        c.state_map_identity[utils.to_str(self.current_config)] = len(c.state_map_identity)
+        c.state_map_identity[circopt_utils.to_str(self.current_config)] = len(c.state_map_identity)
         self.current_moment = 0
         self.reward_range: Tuple[int, int] = (0, 1)
         self.action_space: Discrete = spaces.Discrete(2)
@@ -114,7 +116,7 @@ class CircuitEnv(gym.Env):
         print(reward)
 
         # 3. Store the new "observation" for the state (Identity config)
-        config_as_str: str = utils.to_str(self.current_config)
+        config_as_str: str = circopt_utils.to_str(self.current_config)
 
         # keep initial position of state in QTable
         if config_as_str not in c.state_map_identity.keys():
@@ -131,7 +133,7 @@ class CircuitEnv(gym.Env):
         self.current_action = None
         self.current_moment = 0
         self.current_config = [0 for i in range(len(self.starting_circuit))]
-        config_as_str = utils.to_str(self.current_config)
+        config_as_str = circopt_utils.to_str(self.current_config)
 
         if config_as_str not in c.state_map_identity.keys():
             c.state_map_identity[config_as_str] = len(c.state_map_identity)

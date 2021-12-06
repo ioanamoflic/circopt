@@ -2,7 +2,7 @@ import numpy as np
 import gym
 import config as c
 from quantify.qramcircuits.toffoli_decomposition import ToffoliDecompType
-import utils
+import circopt_utils
 
 
 class QAgent:
@@ -73,4 +73,4 @@ class QAgent:
             mean_rewards = np.append(mean_rewards, np.mean(self.rewards_per_episode[i:(i + 1)]))
             print((i + 1), ": mean espiode reward: ", np.mean(self.rewards_per_episode[i:(i + 1)]))
         print("\n\n")
-        utils.plot(episodes, mean_rewards, "Episodes", "Mean rewards", conf)
+        circopt_utils.plot(episodes, mean_rewards, "Episodes", "Mean rewards", conf)

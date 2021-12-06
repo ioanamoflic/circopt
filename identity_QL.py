@@ -2,12 +2,15 @@ from time import sleep
 
 import gym
 import cirq
+
 from RL.circuit_env_identities import CircuitEnv
 from quantify.mathematics.carry_ripple_4t_adder import CarryRipple4TAdder
 from RL.q_learning import QAgent
 import routing.routing_multiple as rm
+
 import config as c
-from utils import get_all_possible_identities
+
+from circopt_utils import get_all_possible_identities
 
 
 def run():
