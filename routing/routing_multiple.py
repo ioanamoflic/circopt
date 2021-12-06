@@ -32,7 +32,7 @@ class RoutingMultiple:
 
         return counter
 
-    def get_random_decomposition_configuration(self) -> None:
+    def get_random_decomposition_configuration(self, not_random = False) -> None:
         """
         Creates a set (size = no_decomp_sets) of unique strategies to be applied at the decomposition step.
         """

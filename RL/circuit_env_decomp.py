@@ -9,12 +9,12 @@ from gym.spaces import Discrete
 import config as c
 from quantify.qramcircuits.toffoli_decomposition import ToffoliDecompType
 import quantify.qramcircuits.toffoli_decomposition as td
-import utils
+import circopt_utils
 import quantify.optimizers as cnc
 import quantify.utils.counting_utils as cu
 
 
-class CircuitEnv(gym.Env):
+class CircuitEnvDecomp(gym.Env):
     """
     A circuit environment for OpenAI Gym.
     """
@@ -23,9 +23,10 @@ class CircuitEnv(gym.Env):
     NO_ACTIONS = 5
 
     def __init__(self, starting_circuit: cirq.Circuit, device_graph: nx.Graph):
-        super(CircuitEnv, self).__init__()
+        super(CircuitEnvDecomp, self).__init__()
         self.current_action: int = 0
         self.current_config: str = ""
+
         self.no_toffs: int = cu.count_toffoli_of_circuit(starting_circuit)
         self.done: bool = False
         self.reward_range: Tuple[int, int] = (0, 1)
@@ -45,7 +46,7 @@ class CircuitEnv(gym.Env):
         toffoli_found: bool = False
 
         for moment in self.current_circuit:
-            if utils.moment_has_toffoli(moment) and not toffoli_found:
+            if circopt_utils.moment_has_toffoli(moment) and not toffoli_found:
                 toffoli_found = True
                 moments = td.ToffoliDecomposition.construct_decomposed_moments(cirq.Circuit(moment),
                                                                                ToffoliDecompType(

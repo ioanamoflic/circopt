@@ -1,6 +1,7 @@
 import numpy as np
 import gym
 import config as c
+from RL.circuit_env_identities import CircuitEnvIdent
 from quantify.qramcircuits.toffoli_decomposition import ToffoliDecompType
 import circopt_utils
 
@@ -12,7 +13,7 @@ class QAgent:
 
     def __init__(self, env, n_ep=20000, max_iter=100, exploration_proba=1, expl_decay=0.001, min_expl_proba=0.01,
                  gamma=0.99, lr=0.1):
-        self.env: gym.Env = env
+        self.env: CircuitEnvIdent = env
         self.n_episodes: int = n_ep
         self.max_iter_episode: int = max_iter
         self.exploration_proba: int = exploration_proba

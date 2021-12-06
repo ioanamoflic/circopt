@@ -1,22 +1,26 @@
 from typing import Tuple, List
+
+import networkx as nx
+import numpy as np
+
 import gym
 from gym import spaces
-import networkx as nx
-import cirq
 from gym.spaces import Discrete
+
+import cirq
+
 import config as c
+
 from optimization.TopLeftT import TopLeftT
 from optimization.TopRightT import TopRightT
 from optimization.TopLeftHadamard import TopLeftHadamard
 from optimization.OneHLeft2Right import OneHLeftTwoRight
 
 import circopt_utils
-import numpy as np
-
 import quantify.optimizers as cnc
 
 
-class CircuitEnv(gym.Env):
+class CircuitEnvIdent(gym.Env):
     """
     An OpenAI Gym circuit environment.
     """
@@ -25,7 +29,7 @@ class CircuitEnv(gym.Env):
     NO_ACTIONS = 2
 
     def __init__(self, starting_circuit: cirq.Circuit, could_apply_on, device_graph: nx.Graph = None):
-        super(CircuitEnv, self).__init__()
+        super(CircuitEnvIdent, self).__init__()
         self.current_action: int = 0
         self.starting_circuit: cirq.Circuit = starting_circuit
         self.current_circuit: cirq.Circuit = starting_circuit
@@ -116,7 +120,12 @@ class CircuitEnv(gym.Env):
         print(reward)
 
         # 3. Store the new "observation" for the state (Identity config)
-        config_as_str: str = circopt_utils.to_str(self.current_config)
+        # config_as_str: str = circopt_utils.to_str(self.current_config)
+        #
+        # Alexandru: e unic?
+        #
+        n_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)
+        config_as_str = str(n_circuit)
 
         # keep initial position of state in QTable
         if config_as_str not in c.state_map_identity.keys():
