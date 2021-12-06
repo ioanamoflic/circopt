@@ -11,16 +11,18 @@ import routing.routing_multiple as rm
 import config as c
 
 from circopt_utils import get_all_possible_identities
-
+from examples.bernstein import bernstein_vazirani
 
 def run():
     bits: int = 5
-    starting_circuit: cirq.Circuit = CarryRipple4TAdder(bits).circuit
-    circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10, nr_bits=bits)
 
+    # starting_circuit: cirq.Circuit = CarryRipple4TAdder(bits).circuit
+    starting_circuit = bernstein_vazirani(nr_bits=2, secret="11")
+
+    circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10, nr_bits=bits)
     circ_dec.get_random_decomposition_configuration()
 
-    nr_qlearn_trials = 10
+    nr_qlearn_trials = 1
     for i in range(nr_qlearn_trials):
 
         #

@@ -36,8 +36,13 @@ class RoutingMultiple:
         """
         Creates a set (size = no_decomp_sets) of unique strategies to be applied at the decomposition step.
         """
+        prev_len = 0
         while len(self.configurations) < self.no_decomp_sets:
             self.configurations.add(self.get_random_sample())
+            if prev_len == len(self.configurations):
+                # if nothing was added and no_decomp_sets was too high
+                break
+            prev_len = len(self.configurations)
 
     def get_random_sample(self) -> str:
         """
