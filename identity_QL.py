@@ -18,6 +18,7 @@ def run():
 
     # starting_circuit: cirq.Circuit = CarryRipple4TAdder(bits).circuit
     starting_circuit = bernstein_vazirani(nr_bits=2, secret="11")
+    print(starting_circuit)
 
     circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10, nr_bits=bits)
     circ_dec.get_random_decomposition_configuration()

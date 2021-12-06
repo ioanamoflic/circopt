@@ -33,6 +33,7 @@ def bernstein_vazirani(nr_bits = 2, secret = "11"):
 
   circuit.append(oracle)
 
-  circuit.append([cirq.H.on_each(input_qubits), cirq.measure(*input_qubits, key='result')])
+  # circuit.append([cirq.H.on_each(input_qubits), cirq.measure(*input_qubits, key='result')])
+  circuit.append(cirq.H.on_each(input_qubits))
 
   return circuit
