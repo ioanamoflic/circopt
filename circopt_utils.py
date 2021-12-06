@@ -64,13 +64,22 @@ def get_data(bits: int) -> None:
     c.ratios = c.input_depths / c.output_depths
     c.times = df.loc[df['nrbits'] == bits]['process_time'].values
 
+def get_unique_representation(circuit):
+    n_circuit = cirq.Circuit(circuit, strategy=cirq.InsertStrategy.EARLIEST)
+    str_repr = str(n_circuit)
+    #TODO: Alexandru maybe sha-1?
+    return str_repr
 
 def plot(x_axis: np.ndarray, y_axis: np.ndarray, xlabel: str, ylabel: str, decomp: str):
     fig1, ax1 = plt.subplots()
     lines, = ax1.plot(x_axis, y_axis)
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
-    fig1.savefig(decomp + '.png', dpi=300)
+
+    # fig1.savefig(decomp + '.png', dpi=300)
+    # TODO: Alexandru
+    fig1.savefig('rewards.png', dpi=300)
+
     plt.close(fig1)
 
 

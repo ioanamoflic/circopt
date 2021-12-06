@@ -1,4 +1,5 @@
 import cirq
+from optimization.optimize_circuits import CircuitIdentity
 
 
 class TopLeftHadamard(cirq.PointOptimizer):
@@ -35,7 +36,7 @@ class TopLeftHadamard(cirq.PointOptimizer):
                         print('I found TopLeftHadamard ', index)
 
                         if self.only_count:
-                            self.moment_index.append((1, index))
+                            self.moment_index.append((CircuitIdentity.ONE_HADAMARD_UP_LEFT, index))
                             return None
 
                         return cirq.PointOptimizationSummary(

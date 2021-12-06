@@ -1,4 +1,5 @@
 import cirq
+from optimization.optimize_circuits import CircuitIdentity
 
 
 class OneHLeftTwoRight(cirq.PointOptimizer):
@@ -52,7 +53,7 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
 
                                     if self.only_count:
                                         self.count += 1
-                                        self.moment_index.append((2, index))
+                                        self.moment_index.append((CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT, index))
                                         return None
 
                                     return cirq.PointOptimizationSummary(

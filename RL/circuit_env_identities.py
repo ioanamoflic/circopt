@@ -18,6 +18,7 @@ from optimization.OneHLeft2Right import OneHLeftTwoRight
 
 import circopt_utils
 import quantify.optimizers as cnc
+from optimization.optimize_circuits import CircuitIdentity
 
 
 class CircuitEnvIdent(gym.Env):
@@ -54,25 +55,25 @@ class CircuitEnvIdent(gym.Env):
         if action == 1:
             self.current_config[self.could_apply_on[self.current_moment][1]] = self.could_apply_on[self.current_moment][0]
 
-            if self.could_apply_on[self.current_moment][0] == 1:
+            if self.could_apply_on[self.current_moment][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT :
                 opt_circuit = TopLeftHadamard(where_to=self.could_apply_on[self.current_moment][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
                 self._optimize()
                 return
 
-            if self.could_apply_on[self.current_moment][0] == 2:
+            if self.could_apply_on[self.current_moment][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
                 opt_circuit = OneHLeftTwoRight(where_to=self.could_apply_on[self.current_moment][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
                 self._optimize()
                 return
 
-            if self.could_apply_on[self.current_moment][0] == 3:
+            if self.could_apply_on[self.current_moment][0] == CircuitIdentity.T_GATE_RIGHT:
                 opt_circuit = TopRightT(where_to=self.could_apply_on[self.current_moment][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
                 self._optimize()
                 return
 
-            if self.could_apply_on[self.current_moment][0] == 4:
+            if self.could_apply_on[self.current_moment][0] == CircuitIdentity.T_GATE_LEFT:
                 opt_circuit = TopLeftT(where_to=self.could_apply_on[self.current_moment][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
                 self._optimize()
@@ -121,11 +122,7 @@ class CircuitEnvIdent(gym.Env):
 
         # 3. Store the new "observation" for the state (Identity config)
         # config_as_str: str = circopt_utils.to_str(self.current_config)
-        #
-        # Alexandru: e unic?
-        #
-        n_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)
-        config_as_str = str(n_circuit)
+        config_as_str = circopt_utils.get_unique_representation(self.current_circuit)
 
         # keep initial position of state in QTable
         if config_as_str not in c.state_map_identity.keys():

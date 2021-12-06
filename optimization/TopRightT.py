@@ -1,4 +1,5 @@
 import cirq
+from optimization.optimize_circuits import CircuitIdentity
 
 
 class TopRightT(cirq.PointOptimizer):
@@ -33,7 +34,7 @@ class TopRightT(cirq.PointOptimizer):
 
                     if self.only_count:
                         self.count += 1
-                        self.moment_index.append((3, index))
+                        self.moment_index.append((CircuitIdentity.T_GATE_RIGHT, index))
                         return None
 
                     return cirq.PointOptimizationSummary(

@@ -34,6 +34,8 @@ def run():
 
         env = CircuitEnvIdent(decomposed_circuit, could_apply_on=possible_identities)
         agent = QAgent(env, n_ep=10, max_iter=len(possible_identities), lr=0.05, gamma=0.85)
+
+        # TODO: Alexandru De aici in jos e interesant
         agent.train()
         agent.show_evolution(conf)
 

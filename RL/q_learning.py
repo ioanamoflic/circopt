@@ -72,6 +72,6 @@ class QAgent:
         print("Mean reward per episode")
         for i in range(10):
             mean_rewards = np.append(mean_rewards, np.mean(self.rewards_per_episode[i:(i + 1)]))
-            print((i + 1), ": mean espiode reward: ", np.mean(self.rewards_per_episode[i:(i + 1)]))
+            print((i + 1), ": mean episode reward: ", np.mean(self.rewards_per_episode[i:(i + 1)]))
         print("\n\n")
         circopt_utils.plot(episodes, mean_rewards, "Episodes", "Mean rewards", conf)
