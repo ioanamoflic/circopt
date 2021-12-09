@@ -1,8 +1,6 @@
 import numpy as np
-import gym
-import config as c
+import global_stuff as g
 from RL.circuit_env_identities import CircuitEnvIdent
-from quantify.qramcircuits.toffoli_decomposition import ToffoliDecompType
 import circopt_utils
 
 
@@ -22,7 +20,7 @@ class QAgent:
         self.discount_factor: float = gamma
         self.learning_rate: float = lr
         self.rewards_per_episode = list()
-        self.Q_table: np.ndarray = np.zeros(shape=(1, env.action_space.n))
+        self.Q_table: np.ndarray = np.zeros(shape=(300000, env.action_space.n))
 
     def train(self) -> None:
         """
@@ -44,19 +42,18 @@ class QAgent:
 
                 next_state, reward, done, _ = self.env.step(action)
 
-                if len(c.state_map_identity.keys()) >= self.Q_table.shape[0]:
+                if done:
+                    break
+
+                if len(g.state_map_identity.keys()) >= self.Q_table.shape[0]:
                     self.Q_table = np.vstack([self.Q_table, np.zeros(self.env.action_space.n)])
 
                 self.Q_table[current_state, action] = (1 - self.learning_rate) * self.Q_table[
                     current_state, action] + self.learning_rate * (
                                                               reward + self.discount_factor * np.max(
                                                           self.Q_table[next_state, :]))
-
                 total_episode_reward += reward
                 current_state = next_state
-
-                if done:
-                    break
 
             self.exploration_proba = max(self.min_exploration_proba, np.exp(-self.exploration_decreasing_decay * e))
             self.rewards_per_episode.append(total_episode_reward)
@@ -66,12 +63,13 @@ class QAgent:
         Prints mean cumulative reward per 1K episodes.
         :return: None
         """
-        print(self.Q_table)
-        episodes = np.arange(1, 11, 1)
+        print(g.state_counter.values())
+        print(g.state_map_identity)
+        episodes = np.arange(1, 5001, 10)
         mean_rewards = np.array([])
         print("Mean reward per episode")
-        for i in range(10):
-            mean_rewards = np.append(mean_rewards, np.mean(self.rewards_per_episode[i:(i + 1)]))
-            print((i + 1), ": mean episode reward: ", np.mean(self.rewards_per_episode[i:(i + 1)]))
+        for i in range(500):
+            mean_rewards = np.append(mean_rewards, np.mean(self.rewards_per_episode[i * 10:(i + 1) * 10]))
+            print((i + 1) * 10, ": Mean episode reward: ", np.mean(self.rewards_per_episode[i * 10:(i + 1) * 10]))
         print("\n\n")
-        circopt_utils.plot(episodes, mean_rewards, "Episodes", "Mean rewards", conf)
+        circopt_utils.plot(episodes, mean_rewards, "Episodes", "Mean rewards, lr=0.2, gamma=0.98", conf)

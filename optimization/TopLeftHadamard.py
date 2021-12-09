@@ -1,5 +1,6 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
+import global_stuff as g
 
 
 class TopLeftHadamard(cirq.PointOptimizer):
@@ -26,10 +27,11 @@ class TopLeftHadamard(cirq.PointOptimizer):
                 cnot = circuit.operation_at(qubit, next_op_index)
 
                 if isinstance(cnot, cirq.GateOperation) and (cnot.gate == cirq.CNOT):
-                    target = cnot.qubits[0]
-                    control = cnot.qubits[1]
+                    control = cnot.qubits[0]
+                    target = cnot.qubits[1]
 
                     if qubit == control:
+                        print('Found TopLeftHadamard ', 'qubit = ', qubit, 'control = ', control)
 
                         new_op = [cirq.H.on(control), cirq.CNOT.on(control, target), cirq.H.on(control), cirq.H.on(target)]
 

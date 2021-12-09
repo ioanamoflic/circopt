@@ -1,5 +1,6 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
+import global_stuff as g
 
 
 class OneHLeftTwoRight(cirq.PointOptimizer):
@@ -32,6 +33,7 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
                     target = cnot.qubits[1]
 
                     if qubit == control:
+                        print('Found OneHLeft2Right ', 'qubit = ', qubit, 'control = ', control)
                         next_op_index = circuit.next_moment_operating_on(op.qubits,
                                                                          start_moment_index=next_op_index + 1)
 

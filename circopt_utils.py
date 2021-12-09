@@ -1,14 +1,17 @@
 from typing import List
 
 import cirq
-import config as c
 import pandas as pd
+import global_stuff as g
 import numpy as np
 import matplotlib.pyplot as plt
 from optimization.TopLeftT import TopLeftT
 from optimization.TopRightT import TopRightT
 from optimization.TopLeftHadamard import TopLeftHadamard
 from optimization.OneHLeft2Right import OneHLeftTwoRight
+from optimization.ReverseCNOT import ReverseCNOT
+from optimization.HadamardSquare import HadamardSquare
+from optimization.StickCNOTs import StickCNOTs
 
 
 def sort_tuple_list(tup):
@@ -27,20 +30,24 @@ def get_all_possible_identities(circuit):
     opt_circuit.optimize_circuit(circuit)
     all_possibilities = all_possibilities + opt_circuit.moment_index
 
-    opt_circuit = TopRightT(only_count=True)
+    opt_circuit = ReverseCNOT(only_count=True)
     opt_circuit.optimize_circuit(circuit)
     all_possibilities = all_possibilities + opt_circuit.moment_index
 
-    opt_circuit = TopLeftHadamard(only_count=True)
+    opt_circuit = HadamardSquare(only_count=True)
     opt_circuit.optimize_circuit(circuit)
     all_possibilities = all_possibilities + opt_circuit.moment_index
+
+    # opt_circuit = StickCNOTs(only_count=True)
+    # opt_circuit.optimize_circuit(circuit)
+    # all_possibilities = all_possibilities + opt_circuit.moment_index
 
     return sort_tuple_list(all_possibilities)
 
 
 def to_str(config: List[int]):
     current_config_as_string: str = "".join(
-            [chr(ord('0') + config[i]) for i in range(len(config))])
+        [chr(ord('0') + config[i]) for i in range(len(config))])
     return current_config_as_string
 
 
@@ -58,30 +65,27 @@ def get_data(bits: int) -> None:
     :return: None
     """
     df: pd.DataFrame = pd.read_csv("data_letters.csv")
-    c.all_configs = df.loc[df['nrbits'] == bits]['toffoli_desc_conf'].values
-    c.input_depths = df.loc[df['nrbits'] == bits]['depth_input'].values
-    c.output_depths = df.loc[df['nrbits'] == bits]['depth_output'].values
-    c.ratios = c.input_depths / c.output_depths
-    c.times = df.loc[df['nrbits'] == bits]['process_time'].values
+    g.all_configs = df.loc[df['nrbits'] == bits]['toffoli_desc_conf'].values
+    g.input_depths = df.loc[df['nrbits'] == bits]['depth_input'].values
+    g.output_depths = df.loc[df['nrbits'] == bits]['depth_output'].values
+    g.ratios = g.input_depths / g.output_depths
+    g.times = df.loc[df['nrbits'] == bits]['process_time'].values
+
 
 def get_unique_representation(circuit):
     n_circuit = cirq.Circuit(circuit, strategy=cirq.InsertStrategy.EARLIEST)
     str_repr = str(n_circuit)
-    #TODO: Alexandru maybe sha-1?
+    # TODO: Alexandru maybe sha-1?
     return str_repr
+
 
 def plot(x_axis: np.ndarray, y_axis: np.ndarray, xlabel: str, ylabel: str, decomp: str):
     fig1, ax1 = plt.subplots()
     lines, = ax1.plot(x_axis, y_axis)
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
-
     # fig1.savefig(decomp + '.png', dpi=300)
     # TODO: Alexandru
     fig1.savefig('rewards.png', dpi=300)
 
     plt.close(fig1)
-
-
-
-

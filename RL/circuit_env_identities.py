@@ -8,17 +8,19 @@ from gym import spaces
 from gym.spaces import Discrete
 
 import cirq
+import global_stuff as g
 
-import config as c
-
-from optimization.TopLeftT import TopLeftT
-from optimization.TopRightT import TopRightT
 from optimization.TopLeftHadamard import TopLeftHadamard
 from optimization.OneHLeft2Right import OneHLeftTwoRight
+from optimization.ReverseCNOT import ReverseCNOT
+from optimization.HadamardSquare import HadamardSquare
+from optimization.StickCNOTs import StickCNOTs
+from optimization.StickMultiTarget import StickMultiTarget
 
 import circopt_utils
 import quantify.optimizers as cnc
 from optimization.optimize_circuits import CircuitIdentity
+import copy
 
 
 class CircuitEnvIdent(gym.Env):
@@ -33,57 +35,72 @@ class CircuitEnvIdent(gym.Env):
         super(CircuitEnvIdent, self).__init__()
         self.current_action: int = 0
         self.starting_circuit: cirq.Circuit = starting_circuit
-        self.current_circuit: cirq.Circuit = starting_circuit
+        self.current_circuit: cirq.Circuit = copy.deepcopy(self.starting_circuit)
         self.done: bool = False
-        self.current_config: List[int] = [0 for i in range(len(self.current_circuit))]
-        c.state_map_identity[circopt_utils.to_str(self.current_config)] = len(c.state_map_identity)
+        self.len_start = len(self.starting_circuit)
+        g.state_map_identity[circopt_utils.get_unique_representation(self.current_circuit)] = len(g.state_map_identity)
         self.current_moment = 0
-        self.reward_range: Tuple[int, int] = (0, 1)
+        self.reward_range: Tuple[float, float] = (0.0, 1.5)
         self.action_space: Discrete = spaces.Discrete(2)
         self.observation_space: Discrete = spaces.Discrete((pow(self.NO_ACTIONS, len(self.starting_circuit))))
-        self.device: nx.Graph = device_graph
         self.could_apply_on: List[Tuple[int, int]] = could_apply_on
         self.initial_degree: float = self._get_circuit_degree()
-        # self.first_entry = True
-        # self.history_rewards = []
-        # self.reward_decay = 0.1
 
     def _apply_identity(self, action):
         if action == 0:
+            self.current_moment = self.could_apply_on[0][1] + 1
             return
 
         if action == 1:
-            self.current_config[self.could_apply_on[self.current_moment][1]] = self.could_apply_on[self.current_moment][0]
-
-            if self.could_apply_on[self.current_moment][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT :
-                opt_circuit = TopLeftHadamard(where_to=self.could_apply_on[self.current_moment][1])
+            if self.could_apply_on[0][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
+                opt_circuit = TopLeftHadamard(where_to=self.could_apply_on[0][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
-                self._optimize()
+                self.current_moment = self.could_apply_on[0][1] + 2
                 return
 
-            if self.could_apply_on[self.current_moment][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
-                opt_circuit = OneHLeftTwoRight(where_to=self.could_apply_on[self.current_moment][1])
+            if self.could_apply_on[0][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
+                opt_circuit = OneHLeftTwoRight(where_to=self.could_apply_on[0][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
-                self._optimize()
+                self.current_moment = self.could_apply_on[0][1] - 1
                 return
 
-            if self.could_apply_on[self.current_moment][0] == CircuitIdentity.T_GATE_RIGHT:
-                opt_circuit = TopRightT(where_to=self.could_apply_on[self.current_moment][1])
+            if self.could_apply_on[0][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
+                opt_circuit = HadamardSquare(where_to=self.could_apply_on[0][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
-                self._optimize()
+                self.current_moment = self.could_apply_on[0][1] - 2
                 return
 
-            if self.could_apply_on[self.current_moment][0] == CircuitIdentity.T_GATE_LEFT:
-                opt_circuit = TopLeftT(where_to=self.could_apply_on[self.current_moment][1])
+            if self.could_apply_on[0][0] == CircuitIdentity.REVERSED_CNOT:
+                opt_circuit = ReverseCNOT(where_to=self.could_apply_on[0][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
-                self._optimize()
+                self.current_moment = self.could_apply_on[0][1] + 2
 
     def _optimize(self):
+        len_circ_before = len(self.current_circuit)
+        cncl = cnc.CancelNghHadamards(optimize_til=self.current_moment)
+        cncl.optimize_circuit(self.current_circuit)
+
+        cncl = cnc.CancelNghCNOTs(optimize_til=self.current_moment)
+        cncl.optimize_circuit(self.current_circuit)
+
+        cncl = StickCNOTs(optimize_til=self.current_moment + 1)
+        cncl.optimize_circuit(self.current_circuit)
+
+        drop_empty = cirq.optimizers.DropEmptyMoments()
+        drop_empty.optimize_circuit(self.current_circuit)
+
+        len_circ_after = len(self.current_circuit)
+
+        self.current_moment -= (len_circ_before - len_circ_after)
+
         cncl = cnc.CancelNghHadamards()
         cncl.optimize_circuit(self.current_circuit)
 
         cncl = cnc.CancelNghCNOTs()
         cncl.optimize_circuit(self.current_circuit)
+
+        # cncl = StickMutliTarget()
+        # cncl.optimize_circuit(self.current_circuit)
 
         drop_empty = cirq.optimizers.DropEmptyMoments()
         drop_empty.optimize_circuit(self.current_circuit)
@@ -104,48 +121,62 @@ class CircuitEnvIdent(gym.Env):
 
         return np.mean(degrees)
 
+    def _len_move_to_left(self):
+        n_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)
+        return len(n_circuit)
+
     def step(self, action: int):
-        # update possible identity for each moment at current time step (for identities that add moments)
-        # max_iter_episode should change
-        # get_all_possible_identities for each step (?)
-        # self.could_apply_on = utils.get_all_possible_identities(self.current_circuit)
-        # self.current_moment = ...
 
         self.current_action = action
 
         # 1. Update the environment state based on the chosen action
         self._apply_identity(action)
+        self._optimize()
 
         # 2. Calculate the "reward" for the new state of the circuit
-        reward = self.initial_degree / self._get_circuit_degree()
+        # reward = self.initial_degree / self._get_circuit_degree()
+        reward = self.len_start / self._len_move_to_left()
+
+        # make agent avoid starting state
+        if circopt_utils.get_unique_representation(self.starting_circuit) == \
+            circopt_utils.get_unique_representation(self.current_circuit):
+            reward = 0.0
+
         print(reward)
 
         # 3. Store the new "observation" for the state (Identity config)
-        # config_as_str: str = circopt_utils.to_str(self.current_config)
-        config_as_str = circopt_utils.get_unique_representation(self.current_circuit)
+        circuit_as_string = circopt_utils.get_unique_representation(self.current_circuit)
 
         # keep initial position of state in QTable
-        if config_as_str not in c.state_map_identity.keys():
-            c.state_map_identity[config_as_str] = len(c.state_map_identity)
+        if circuit_as_string not in g.state_map_identity.keys():
+            g.state_map_identity[circuit_as_string] = len(g.state_map_identity)
 
-        observation: int = c.state_map_identity.get(config_as_str)
+        # count every time a state is encountered
+        g.state_counter[circuit_as_string] = g.state_counter.get(circuit_as_string, 0) + 1
 
-        self.current_moment += 1
+        observation: int = g.state_map_identity.get(circuit_as_string)
+
+        # will be replaced with a future 'get_next_identity'
+        self.could_apply_on = circopt_utils.get_all_possible_identities(self.current_circuit)
+        self.could_apply_on = [i for i in self.could_apply_on if i[1] >= self.current_moment]
+
+        if not self.could_apply_on:
+            self.done = True
 
         return observation, reward, self.done, {}
 
     def reset(self):
-        self.current_circuit = self.starting_circuit
+        self.current_circuit = copy.deepcopy(self.starting_circuit)
         self.current_action = None
         self.current_moment = 0
-        self.current_config = [0 for i in range(len(self.starting_circuit))]
-        config_as_str = circopt_utils.to_str(self.current_config)
-
-        if config_as_str not in c.state_map_identity.keys():
-            c.state_map_identity[config_as_str] = len(c.state_map_identity)
         self.done = False
+        self.could_apply_on = circopt_utils.get_all_possible_identities(self.current_circuit)
+        self.could_apply_on = [i for i in self.could_apply_on if i[1] >= self.current_moment]
 
-        return c.state_map_identity[config_as_str]
+        circuit_as_string = circopt_utils.get_unique_representation(self.current_circuit)
+        g.state_map_identity[circuit_as_string] = len(g.state_map_identity)
+
+        return g.state_map_identity[circuit_as_string]
 
     def render(self, mode='human', close=False):
         if self.current_action == 0:
