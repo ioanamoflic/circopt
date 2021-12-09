@@ -60,7 +60,7 @@ class QAgent:
 
     def show_evolution(self, conf: str) -> None:
         """
-        Prints mean cumulative reward per 1K episodes.
+        Prints mean cumulative rewards per 10 episodes.
         :return: None
         """
         print(g.state_counter.values())

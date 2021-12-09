@@ -77,13 +77,13 @@ class CircuitEnvIdent(gym.Env):
 
     def _optimize(self):
         len_circ_before = len(self.current_circuit)
-        cncl = cnc.CancelNghHadamards(optimize_til=self.current_moment)
+        cncl = cnc.CancelNghHadamards(optimize_till=self.current_moment)
         cncl.optimize_circuit(self.current_circuit)
 
-        cncl = cnc.CancelNghCNOTs(optimize_til=self.current_moment)
+        cncl = cnc.CancelNghCNOTs(optimize_till=self.current_moment)
         cncl.optimize_circuit(self.current_circuit)
 
-        cncl = StickCNOTs(optimize_til=self.current_moment + 1)
+        cncl = StickCNOTs(optimize_till=self.current_moment + 1)
         cncl.optimize_circuit(self.current_circuit)
 
         drop_empty = cirq.optimizers.DropEmptyMoments()
@@ -174,9 +174,10 @@ class CircuitEnvIdent(gym.Env):
         self.could_apply_on = [i for i in self.could_apply_on if i[1] >= self.current_moment]
 
         circuit_as_string = circopt_utils.get_unique_representation(self.current_circuit)
-        g.state_map_identity[circuit_as_string] = len(g.state_map_identity)
+        if circuit_as_string not in g.state_map_identity.keys():
+            g.state_map_identity[circuit_as_string] = len(g.state_map_identity)
 
-        return g.state_map_identity[circuit_as_string]
+        return g.state_map_identity.get(circuit_as_string)
 
     def render(self, mode='human', close=False):
         if self.current_action == 0:
