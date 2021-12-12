@@ -15,8 +15,8 @@ from optimization.StickCNOTs import StickCNOTs
 import random
 
 
-def get_random_action(current_state) -> int:
-    tuple = (current_state, g.current_moment, random.randint(0, 1))
+def get_random_action(current_state, moment) -> int:
+    tuple = (current_state, moment, random.randint(0, 1))
     if tuple not in g.action_map.keys():
         g.action_map[tuple] = len(g.action_map)
     return g.action_map.get(tuple)

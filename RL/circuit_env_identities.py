@@ -136,6 +136,9 @@ class CircuitEnvIdent(gym.Env):
         n_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)
         return len(n_circuit)
 
+    def get_moment_to_apply_on(self):
+        return self.could_apply_on[0][1]
+
     def start_again(self):
         g.current_moment = 0
         self.could_apply_on = circopt_utils.get_all_possible_identities(self.current_circuit)

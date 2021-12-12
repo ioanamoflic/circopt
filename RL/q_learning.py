@@ -37,7 +37,7 @@ class QAgent:
 
             for i in range(self.max_iter_episode):
                 if np.random.uniform(0, 1) < self.exploration_proba:
-                    action: int = circopt_utils.get_random_action(current_state)
+                    action: int = circopt_utils.get_random_action(current_state, self.env.get_moment_to_apply_on())
                 else:
                     action: int = np.argmax(self.Q_table[current_state, :])
 
@@ -70,10 +70,10 @@ class QAgent:
         """
         print(g.state_counter.values())
         print(g.state_map_identity)
-        episodes = np.arange(1, 5001, 10)
+        episodes = np.arange(1, 3001, 10)
         mean_rewards = np.array([])
         print("Mean reward per episode")
-        for i in range(500):
+        for i in range(300):
             mean_rewards = np.append(mean_rewards, np.mean(self.rewards_per_episode[i * 10:(i + 1) * 10]))
             print((i + 1) * 10, ": Mean episode reward: ", np.mean(self.rewards_per_episode[i * 10:(i + 1) * 10]))
         print("\n\n")
