@@ -15,8 +15,8 @@ class StickCNOTs(cirq.PointOptimizer):
 
             next_op_index = circuit.next_moment_operating_on(op.qubits, start_moment_index=index + 1)
 
-            if next_op_index != index + 1:
-                return None
+            # if next_op_index != index + 1:
+            #     return None
 
             qubit = op.qubits[0]
 

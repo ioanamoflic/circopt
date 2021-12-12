@@ -2,6 +2,7 @@ import numpy as np
 
 state_map = {"": 0}
 state_map_identity = {}
+action_map = {}
 current_moment = 0
 state_counter = dict()
 

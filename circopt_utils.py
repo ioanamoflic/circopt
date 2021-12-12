@@ -12,6 +12,21 @@ from optimization.OneHLeft2Right import OneHLeftTwoRight
 from optimization.ReverseCNOT import ReverseCNOT
 from optimization.HadamardSquare import HadamardSquare
 from optimization.StickCNOTs import StickCNOTs
+import random
+
+
+def get_random_action(current_state) -> int:
+    tuple = (current_state, g.current_moment, random.randint(0, 1))
+    if tuple not in g.action_map.keys():
+        g.action_map[tuple] = len(g.action_map)
+    return g.action_map.get(tuple)
+
+
+def get_action_by_value(value: int):
+    for tuple, index in g.action_map.items():
+        if index == value:
+            return tuple
+    return None
 
 
 def sort_tuple_list(tup):

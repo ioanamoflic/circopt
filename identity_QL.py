@@ -32,7 +32,7 @@ def run():
         g.state_counter = {}
 
         env = CircuitEnvIdent(decomposed_circuit, could_apply_on=possible_identities)
-        agent = QAgent(env, n_ep=5000, max_iter=2000, lr=0.2, gamma=0.98)
+        agent = QAgent(env, n_ep=5000, max_iter=2000, lr=0.2, gamma=0.99)
 
         # TODO: Alexandru De aici in jos e interesant
         agent.train()
