@@ -21,6 +21,7 @@ class QAgent:
         self.discount_factor: float = gamma
         self.learning_rate: float = lr
         self.rewards_per_episode = list()
+        self.final_len_per_episode = list()
         self.Q_table: np.ndarray = np.zeros(shape=(10000, 1000))
 
     def train(self) -> None:
@@ -32,6 +33,7 @@ class QAgent:
 
         for e in range(self.n_episodes):
             current_state: int = self.env.reset()
+            current_len = 0
             total_episode_reward: float = 0.0
             print('Episode', e)
 
@@ -41,40 +43,39 @@ class QAgent:
                 else:
                     action: int = np.argmax(self.Q_table[current_state, :])
 
-                next_state, reward, done, _ = self.env.step(action)
+                next_state, reward, done, extra = self.env.step(action)
+                current_len = extra["current_len"]
 
                 if done:
                     break
-
-                if len(g.state_map_identity.keys()) >= self.Q_table.shape[0]:
-                    self.Q_table = np.vstack([self.Q_table, np.zeros(self.env.action_space.n)])
-
-                if len(g.action_map.keys()) >= self.Q_table.shape[1]:
-                    self.Q_table = np.hstack([self.Q_table, np.zeros(self.Q_table.shape[0])])
 
                 self.Q_table[current_state, action] = (1 - self.learning_rate) * self.Q_table[
                     current_state, action] + self.learning_rate * (
                                                               reward + self.discount_factor * np.max(
                                                           self.Q_table[next_state, :]))
-                print(self.Q_table)
+
                 total_episode_reward += reward
                 current_state = next_state
 
             self.exploration_proba = max(self.min_exploration_proba, np.exp(-self.exploration_decreasing_decay * e))
             self.rewards_per_episode.append(total_episode_reward)
+            self.final_len_per_episode.append(current_len)
 
     def show_evolution(self, conf: str) -> None:
         """
         Prints mean cumulative rewards per 10 episodes.
         :return: None
         """
-        print(g.state_counter.values())
-        print(g.state_map_identity)
-        episodes = np.arange(1, 3001, 10)
+        episodes = np.arange(1, 8001, 10)
         mean_rewards = np.array([])
+        mean_lengths = np.array([])
+
         print("Mean reward per episode")
-        for i in range(300):
+        for i in range(800):
             mean_rewards = np.append(mean_rewards, np.mean(self.rewards_per_episode[i * 10:(i + 1) * 10]))
+            mean_lengths = np.append(mean_lengths, np.mean(self.final_len_per_episode[i * 10:(i + 1) * 10]))
             print((i + 1) * 10, ": Mean episode reward: ", np.mean(self.rewards_per_episode[i * 10:(i + 1) * 10]))
         print("\n\n")
-        circopt_utils.plot(episodes, mean_rewards, "Episodes", "Mean rewards, lr=0.2, gamma=0.99", conf)
+
+        circopt_utils.plot_reward(episodes, mean_rewards, "Episodes", "Mean rewards, lr=0.2, gamma=0.98", conf)
+        circopt_utils.plot_len(episodes, mean_lengths, "Episodes", "Mean circuit length, lr=0.2, gamma=0.98", conf)
