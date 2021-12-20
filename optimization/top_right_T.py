@@ -30,8 +30,6 @@ class TopRightT(cirq.PointOptimizer):
 
                     new_op = [cirq.T.on(qubit), cirq.CNOT.on(control, target)]
 
-                    print('I found TopRightT ', index)
-
                     if self.only_count:
                         self.count += 1
                         self.moment_index.append((CircuitIdentity.T_GATE_RIGHT, index))

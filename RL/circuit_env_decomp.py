@@ -6,7 +6,7 @@ import numpy as np
 import networkx as nx
 import cirq
 from gym.spaces import Discrete
-import config as c
+import global_stuff as c
 from quantify.qramcircuits.toffoli_decomposition import ToffoliDecompType
 import quantify.qramcircuits.toffoli_decomposition as td
 import circopt_utils

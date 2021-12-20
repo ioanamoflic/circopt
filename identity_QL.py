@@ -1,45 +1,79 @@
-from time import sleep
+from typing import List, Tuple
 
-import gym
 import cirq
+from cirq import InsertStrategy
 
 from RL.circuit_env_identities import CircuitEnvIdent
-from quantify.mathematics.carry_ripple_4t_adder import CarryRipple4TAdder
 from RL.q_learning import QAgent
 import routing.routing_multiple as rm
-
+from circuits.bernstein import bernstein_vazirani
 import global_stuff as g
 from circopt_utils import get_all_possible_identities
-from examples.bernstein import bernstein_vazirani
+import random
+
+
+def add_random_CNOT(circuit: cirq.Circuit):
+    qubits = list(circuit.all_qubits())
+
+    control = qubits[random.randint(1, len(qubits) - 1)]
+    target = qubits[random.randint(1, len(qubits) - 1)]
+
+    while control == target:
+        target = qubits[random.randint(1, len(qubits) - 1)]
+
+    circuit.append([cirq.CNOT.on(control, target)], strategy=InsertStrategy.NEW)
+    return circuit
+
+
+def add_random_H(circuit: cirq.Circuit):
+    qubits = list(circuit.all_qubits())
+    circuit.append([cirq.H.on(qubits[random.randint(1, len(qubits) - 1)])], strategy=InsertStrategy.NEW)
+    return circuit
+
+
+def get_random_circuit(nr_qubits: int, added_depth: int):
+    qubits = [cirq.NamedQubit(str(i)) for i in range(nr_qubits)]
+    circuit = cirq.Circuit()
+    for i in range(nr_qubits):
+        circuit.append([cirq.H.on(qubits[i])])
+
+    for i in range(added_depth):
+        if random.randint(1, 10) <= 7:
+            circuit = add_random_CNOT(circuit)
+        else:
+            circuit = add_random_H(circuit)
+
+    return circuit
 
 
 def run():
-    bits: int = 5
+    ep = 4000
+    # starting_circuit: cirq.Circuit = bernstein_vazirani(nr_bits=3, secret="110")
+    # qbits = 3
+    qubit_trials = [15, 20, 25]
+    depth_trials = [15, 20, 25]
 
-    # starting_circuit: cirq.Circuit = CarryRipple4TAdder(bits).circuit
-    starting_circuit = bernstein_vazirani(nr_bits=6, secret="101100")
-    print(starting_circuit)
+    nr_qlearn_trials: int = 1
+    for start in range(len(depth_trials)):
+        qbits = qubit_trials[start:start+1][0]
+        added_depth = depth_trials[start:start+1][0]
+        starting_circuit = get_random_circuit(qbits, added_depth)
 
-    circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10, nr_bits=bits)
-    circ_dec.get_random_decomposition_configuration()
+        circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10, nr_bits=qbits)
+        circ_dec.get_random_decomposition_configuration()
 
-    nr_qlearn_trials = 1
-    for i in range(nr_qlearn_trials):
-        conf = circ_dec.configurations.pop()
-        decomposed_circuit = circ_dec.decompose_toffolis_in_circuit(conf)
-        possible_identities = get_all_possible_identities(decomposed_circuit)
-        g.state_map_identity = {}
-        g.state_counter = {}
+        for i in range(nr_qlearn_trials):
+            conf: str = circ_dec.configurations.pop()
+            decomposed_circuit = circ_dec.decompose_toffolis_in_circuit(conf)
+            possible_identities: List[Tuple[int, int]] = get_all_possible_identities(decomposed_circuit)
+            g.state_map_identity = dict()
+            g.state_counter = dict()
+            g.action_map = dict()
 
-        env = CircuitEnvIdent(decomposed_circuit, could_apply_on=possible_identities)
-        agent = QAgent(env, n_ep=8000, max_iter=2000, lr=0.2, gamma=0.99)
-
-        # TODO: Alexandru De aici in jos e interesant
-        agent.train()
-        agent.show_evolution(conf)
-
-        # to see prints
-        sleep(5)
+            env = CircuitEnvIdent(decomposed_circuit, could_apply_on=possible_identities)
+            agent = QAgent(env, n_ep=ep, max_iter=2000, lr=0.01, gamma=0.97)
+            agent.train()
+            agent.show_evolution(filename=str(qbits) + '_qb_random.csv', bvz_bits=qbits, ep=ep)
 
 
 if __name__ == '__main__':

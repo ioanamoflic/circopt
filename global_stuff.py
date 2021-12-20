@@ -1,8 +1,8 @@
 import numpy as np
 
 state_map = {"": 0}
-state_map_identity = {}
-action_map = {}
+state_map_identity = dict()
+action_map = dict()
 current_moment = 0
 state_counter = dict()
 

@@ -1,10 +1,10 @@
 import cirq
 
 
-class StickMultiTarget(cirq.PointOptimizer):
+class StickMultiTargetToCNOT(cirq.PointOptimizer):
     def __init__(self, optimize_till: int = None):
         super().__init__()
-        self.optimize_till = optimize_till
+        self.optimize_till: int = optimize_till
 
     def optimization_at(self, circuit, index, op):
         if self.optimize_till is not None and index >= self.optimize_till:
@@ -20,17 +20,15 @@ class StickMultiTarget(cirq.PointOptimizer):
 
             if next_op_index is not None:
                 cnot = circuit.operation_at(op.qubits[0], next_op_index)
-                if len(cnot.qubits) >= 3:
-
+                if isinstance(cnot, cirq.GateOperation) and (cnot.gate == cirq.CNOT):
                     control_right = cnot.qubits[0]
-                    targets_right = cnot.qubits[1:]
+                    target_right = cnot.qubits[1]
 
-                    if control_left == control_right:
-                        targets = [control_left] + list(targets_left) + list(targets_right)
+                    if control_left == control_right and target_right not in targets_left:
+                        targets = [control_left] + list(targets_left) + [target_right]
                         gate = cirq.ParallelGate(cirq.X, len(targets[1:]))
                         c_op = gate.controlled().on(*targets)
                         new_op = [c_op]
-                        print('I found MultiTargets to stick at ', index, next_op_index)
 
                         return cirq.PointOptimizationSummary(
                             clear_span=next_op_index - index + 1,

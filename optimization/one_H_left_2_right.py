@@ -33,7 +33,6 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
                     target = cnot.qubits[1]
 
                     if qubit == control:
-                        print('Found OneHLeft2Right ', 'qubit = ', qubit, 'control = ', control)
                         next_op_index = circuit.next_moment_operating_on(op.qubits,
                                                                          start_moment_index=next_op_index + 1)
 
@@ -50,8 +49,6 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
                                 if qubit == control:
 
                                     new_op = [cirq.H.on(target), cirq.CNOT.on(target, control)]
-
-                                    print('I found OneHLeftTwoRight ', index)
 
                                     if self.only_count:
                                         self.count += 1

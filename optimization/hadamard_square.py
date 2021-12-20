@@ -51,8 +51,6 @@ class HadamardSquare(cirq.PointOptimizer):
 
                                         new_op = [cirq.CNOT.on(target, control)]
 
-                                        print('I found Square hadamards ', index)
-
                                         if self.only_count:
                                             self.count += 1
                                             self.moment_index.append((CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT, index))

@@ -1,5 +1,3 @@
-from typing import Optional, Tuple, List
-
 import cirq
 from enum import Enum, auto, EnumMeta
 

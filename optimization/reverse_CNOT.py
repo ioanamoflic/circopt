@@ -1,6 +1,5 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
-import global_stuff as g
 
 
 class ReverseCNOT(cirq.PointOptimizer):
@@ -20,7 +19,7 @@ class ReverseCNOT(cirq.PointOptimizer):
 
             new_op = [cirq.H.on(control), cirq.H.on(target), cirq.CNOT.on(target, control), cirq.H.on(control), cirq.H.on(target)]
 
-            print('I found CNOT to reverse ', index)
+            print('CNOT reversed', index)
 
             if self.only_count:
                 self.moment_index.append((CircuitIdentity.REVERSED_CNOT, index))

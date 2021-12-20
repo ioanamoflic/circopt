@@ -1,26 +1,26 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
-import global_stuff as g
 
 
-class TopLeftHadamard(cirq.PointOptimizer):
+class TopLeftT(cirq.PointOptimizer):
     def __init__(self, where_to: int = 0, only_count=False):
         super().__init__()
-        self.where_to = where_to
-        self.only_count = only_count
-        self.moment_index = []
+        self.where_to: int = where_to
+        self.only_count: bool = only_count
+        self.count: int = 0
+        self.moment_index = list()
 
     def optimization_at(self, circuit, index, op):
         if index != self.where_to and not self.only_count:
             return None
-
-        if isinstance(op, cirq.GateOperation) and (op.gate == cirq.H):
+        if isinstance(op, cirq.GateOperation) and (op.gate == cirq.T):
 
             next_op_index = circuit.next_moment_operating_on(op.qubits, start_moment_index=index + 1)
-            qubit = op.qubits[0]
 
             if next_op_index != index + 1:
                 return None
+
+            qubit = op.qubits[0]
 
             if next_op_index is not None:
 
@@ -31,14 +31,11 @@ class TopLeftHadamard(cirq.PointOptimizer):
                     target = cnot.qubits[1]
 
                     if qubit == control:
-                        print('Found TopLeftHadamard ', 'qubit = ', qubit, 'control = ', control)
-
-                        new_op = [cirq.H.on(control), cirq.CNOT.on(control, target), cirq.H.on(control), cirq.H.on(target)]
-
-                        print('I found TopLeftHadamard ', index)
+                        new_op = [cirq.CNOT.on(control, target), cirq.T.on(op.qubits[0])]
 
                         if self.only_count:
-                            self.moment_index.append((CircuitIdentity.ONE_HADAMARD_UP_LEFT, index))
+                            self.count += 1
+                            self.moment_index.append((CircuitIdentity.T_GATE_LEFT, index))
                             return None
 
                         return cirq.PointOptimizationSummary(
