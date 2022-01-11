@@ -29,6 +29,8 @@ def add_random_H(circuit: cirq.Circuit, qubits):
 
 
 def get_random_circuit(nr_qubits: int, added_depth: int):
+    # TODO: Use maybe https://quantumai.google/reference/python/cirq/testing/random_circuit
+
     qubits = [cirq.NamedQubit(str(i)) for i in range(nr_qubits)]
     circuit = cirq.Circuit()
     # circuit.append([cirq.H.on(qubits[0])])
@@ -48,8 +50,8 @@ def run():
     ep = 1000
     # starting_circuit: cirq.Circuit = bernstein_vazirani(nr_bits=3, secret="110")
     # qbits = 3
-    qubit_trials = [15, 16, 20, 25]
-    depth_trials = [15, 16, 20, 25]
+    qubit_trials = [5, 16, 20, 25]
+    depth_trials = [300, 16, 20, 25]
 
     nr_qlearn_trials: int = 1
     for start in range(len(depth_trials)):

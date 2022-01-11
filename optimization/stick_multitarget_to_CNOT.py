@@ -38,7 +38,7 @@ class StickMultiTargetToCNOT(cirq.PointOptimizer):
                         c_op = gate.controlled().on(*targets)
                         new_op = [c_op]
 
-                        print('i found multitarget and cnot to stick ', index)
+                        # print('i found multitarget and cnot to stick ', index)
                         self.reward += 0.1
 
                         return cirq.PointOptimizationSummary(

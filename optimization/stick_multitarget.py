@@ -28,12 +28,17 @@ class StickMultiTarget(cirq.PointOptimizer):
 
                     if control_left == control_right:
                         # de verificat sa fie targets distincti
-                        targets = [control_left] + list(targets_left) + list(targets_right)
+                        sl = set(targets_left)
+                        sr = set(targets_right)
+
+                        targets = [control_left] + list(sl.union(sr).difference(sl.intersection(sr)))
+                        # targets = [control_left] + list(targets_left) + list(targets_right)
+
                         gate = cirq.ParallelGate(cirq.X, len(targets[1:]))
                         c_op = gate.controlled().on(*targets)
                         new_op = [c_op]
 
-                        print('i found multitargets to stick ', index)
+                        # print('i found multitargets to stick ', index)
 
                         self.reward += 0.1
                         return cirq.PointOptimizationSummary(

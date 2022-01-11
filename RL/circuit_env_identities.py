@@ -182,14 +182,24 @@ class CircuitEnvIdent(gym.Env):
         current_degree = self._get_circuit_degree()
         current_len: int = self._len_move_to_left()
         current_gate_count: int = self._get_gate_count()
-        reward += pow((self.previous_degree - current_degree), (1 + self.previous_len / current_len))
+        # reward += pow((self.previous_degree - current_degree), (1 + self.previous_len / current_len))
         # reward += pow(pow((self.previous_gate_count - current_gate_count), 2), (self.previous_len / current_len))
+        import math
+        contrast = (self.previous_len - current_len) / (self.previous_len + current_len)
+        contrast = 1 - (contrast+1)/2
+        reward += pow(contrast, (self.previous_gate_count/current_gate_count))
         # reward = self.previous_len / self._len_move_to_left()
+
         self.previous_degree = current_degree
         self.previous_gate_count = current_gate_count
         self.previous_len = current_len
 
         # 3. Store the new "observation" for the state (Identity config)
+
+        # TODO: Alexandru
+        print("Reward", reward, "|C|", len(list(self.current_circuit.all_operations())))
+        # print(self.current_circuit)
+        # input("Press any key...")
 
         circuit_as_string: str = circopt_utils.get_unique_representation(self.current_circuit)
 

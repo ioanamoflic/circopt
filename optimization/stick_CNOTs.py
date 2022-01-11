@@ -18,12 +18,12 @@ class StickCNOTs(cirq.PointOptimizer):
             #     return None
 
             qubit = op.qubits[0]
-            print(op)
+            # print(op)
 
             if next_op_index is not None:
 
                 cnot = circuit.operation_at(qubit, next_op_index)
-                print(cnot)
+                # print(cnot)
 
                 if isinstance(cnot, cirq.GateOperation) and (cnot.gate == cirq.CNOT):
                     control = cnot.qubits[0]
@@ -40,7 +40,7 @@ class StickCNOTs(cirq.PointOptimizer):
                         if len(set(targets)) < len(targets):
                             return None
 
-                        print('i found CNOT to stick ', index)
+                        # print('i found CNOT to stick ', index)
 
                         gate = cirq.ParallelGate(cirq.X, len(targets[1:]))
                         c_op = gate.controlled().on(*targets)
