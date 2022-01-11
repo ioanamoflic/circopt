@@ -5,6 +5,7 @@ class StickMultiTarget(cirq.PointOptimizer):
     def __init__(self, optimize_till: int = None):
         super().__init__()
         self.optimize_till = optimize_till
+        self.reward = 0.0
 
     def optimization_at(self, circuit, index, op):
         if self.optimize_till is not None and index >= self.optimize_till:
@@ -26,11 +27,15 @@ class StickMultiTarget(cirq.PointOptimizer):
                     targets_right = cnot.qubits[1:]
 
                     if control_left == control_right:
+                        # de verificat sa fie targets distincti
                         targets = [control_left] + list(targets_left) + list(targets_right)
                         gate = cirq.ParallelGate(cirq.X, len(targets[1:]))
                         c_op = gate.controlled().on(*targets)
                         new_op = [c_op]
 
+                        print('i found multitargets to stick ', index)
+
+                        self.reward += 0.1
                         return cirq.PointOptimizationSummary(
                             clear_span=next_op_index - index + 1,
                             clear_qubits=targets,

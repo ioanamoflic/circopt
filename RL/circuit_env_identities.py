@@ -56,55 +56,52 @@ class CircuitEnvIdent(gym.Env):
                 counter += 1
         return counter
 
-    def _apply_identity(self, action: int) -> float:
-        add_to_reward: float = 0.0
-
+    def _apply_identity(self, action: int) -> None:
         if action == 0:
             g.current_moment = self.could_apply_on[0][1] + 1
-            return add_to_reward
 
         if action == 1:
             if self.could_apply_on[0][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
                 opt_circuit = TopLeftHadamard(where_to=self.could_apply_on[0][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
                 g.current_moment = self.could_apply_on[0][1] + 2
-                add_to_reward += 0.0
 
             if self.could_apply_on[0][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
                 opt_circuit = OneHLeftTwoRight(where_to=self.could_apply_on[0][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
                 g.current_moment = self.could_apply_on[0][1] - 1
-                add_to_reward += 0.0
 
             if self.could_apply_on[0][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
                 opt_circuit = HadamardSquare(where_to=self.could_apply_on[0][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
                 g.current_moment = self.could_apply_on[0][1] - 2
-                add_to_reward += 0.0
 
             if self.could_apply_on[0][0] == CircuitIdentity.REVERSED_CNOT:
                 opt_circuit = ReverseCNOT(where_to=self.could_apply_on[0][1])
                 opt_circuit.optimize_circuit(self.current_circuit)
                 g.current_moment = self.could_apply_on[0][1] + 2
-                add_to_reward += 0.1
-        return add_to_reward
 
-    def _optimize(self) -> None:
+    def _optimize(self) -> float:
+        add_to_reward = 0.0
         len_circ_before = len(self.current_circuit)
         cncl = cnc.CancelNghHadamards(optimize_till=g.current_moment)
         cncl.optimize_circuit(self.current_circuit)
 
         cncl = cnc.CancelNghCNOTs(optimize_till=g.current_moment)
         cncl.optimize_circuit(self.current_circuit)
+        add_to_reward += cncl.reward
 
         cncl = StickCNOTs(optimize_till=g.current_moment + 1)
         cncl.optimize_circuit(self.current_circuit)
+        add_to_reward += cncl.reward
 
         cncl = StickMultiTarget(optimize_till=g.current_moment + 1)
         cncl.optimize_circuit(self.current_circuit)
+        add_to_reward += cncl.reward
 
         opt_circuit = StickMultiTargetToCNOT(optimize_till=g.current_moment + 1)
         opt_circuit.optimize_circuit(self.current_circuit)
+        add_to_reward += cncl.reward
 
         drop_empty = cirq.optimizers.DropEmptyMoments()
         drop_empty.optimize_circuit(self.current_circuit)
@@ -113,10 +110,13 @@ class CircuitEnvIdent(gym.Env):
 
         g.current_moment -= (len_circ_before - len_circ_after)
 
-        cncl = cnc.CancelNghHadamards()
+        cncl = cnc.CancelNghCNOTs()
         cncl.optimize_circuit(self.current_circuit)
 
-        cncl = cnc.CancelNghCNOTs()
+        cncl = StickCNOTs()
+        cncl.optimize_circuit(self.current_circuit)
+
+        cncl = cnc.CancelNghHadamards()
         cncl.optimize_circuit(self.current_circuit)
 
         cncl = StickMultiTarget()
@@ -127,6 +127,8 @@ class CircuitEnvIdent(gym.Env):
 
         drop_empty = cirq.optimizers.DropEmptyMoments()
         drop_empty.optimize_circuit(self.current_circuit)
+
+        return add_to_reward
 
     def _get_circuit_degree(self) -> np.ndarray:
         degrees = np.zeros(len(self.current_circuit.all_qubits()))
@@ -148,8 +150,22 @@ class CircuitEnvIdent(gym.Env):
         n_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)
         return len(n_circuit)
 
+    def _break_moments(self):
+        self.current_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.NEW)
+
     def get_moment_to_apply_on(self) -> int:
         return self.could_apply_on[0][1]
+
+    def _exhaust_optimization(self) -> float:
+        reward = 0.0
+        prev_circ = ""
+        current_circ = circopt_utils.get_unique_representation(self.current_circuit)
+        while prev_circ != current_circ:
+            prev_circ = current_circ
+            reward += self._optimize()
+            current_circ = circopt_utils.get_unique_representation(self.current_circuit)
+
+        return reward
 
     def step(self, action: int) -> Tuple[int, float, bool, dict]:
         # 1. Update the environment state based on the chosen action
@@ -157,10 +173,8 @@ class CircuitEnvIdent(gym.Env):
         if action_by_value is not None:
             self.current_action = action_by_value
 
-        reward: float = self._apply_identity(self.current_action[2])
-        print("circuit after identity: ", self.current_circuit)
-        self._optimize()
-        print("circuit after optimization: ", self.current_circuit)
+        self._apply_identity(self.current_action[2])
+        reward: float = self._exhaust_optimization()
 
         # 2. Calculate the "reward" for the new state of the circuit
         # print('previous degree: ', self.previous_degree)
@@ -168,8 +182,7 @@ class CircuitEnvIdent(gym.Env):
         current_degree = self._get_circuit_degree()
         current_len: int = self._len_move_to_left()
         current_gate_count: int = self._get_gate_count()
-        reward += pow((self.previous_degree - current_degree), (self.previous_len / current_len))
-        print("reward: ", reward)
+        reward += pow((self.previous_degree - current_degree), (1 + self.previous_len / current_len))
         # reward += pow(pow((self.previous_gate_count - current_gate_count), 2), (self.previous_len / current_len))
         # reward = self.previous_len / self._len_move_to_left()
         self.previous_degree = current_degree
@@ -200,6 +213,7 @@ class CircuitEnvIdent(gym.Env):
 
     def reset(self):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
+        self._exhaust_optimization()
         self.previous_degree = self._get_circuit_degree()
         g.current_moment = 0
         self.done = False

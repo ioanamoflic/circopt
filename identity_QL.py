@@ -12,52 +12,51 @@ from circopt_utils import get_all_possible_identities
 import random
 
 
-def add_random_CNOT(circuit: cirq.Circuit):
-    qubits = list(circuit.all_qubits())
-
-    control = qubits[random.randint(1, len(qubits) - 1)]
-    target = qubits[random.randint(1, len(qubits) - 1)]
+def add_random_CNOT(circuit: cirq.Circuit, qubits):
+    control = qubits[random.randint(0, len(qubits) - 1)]
+    target = qubits[random.randint(0, len(qubits) - 1)]
 
     while control == target:
-        target = qubits[random.randint(1, len(qubits) - 1)]
+        target = qubits[random.randint(0, len(qubits) - 1)]
 
     circuit.append([cirq.CNOT.on(control, target)], strategy=InsertStrategy.NEW)
     return circuit
 
 
-def add_random_H(circuit: cirq.Circuit):
-    qubits = list(circuit.all_qubits())
-    circuit.append([cirq.H.on(qubits[random.randint(1, len(qubits) - 1)])], strategy=InsertStrategy.NEW)
+def add_random_H(circuit: cirq.Circuit, qubits):
+    circuit.append([cirq.H.on(qubits[random.randint(0, len(qubits) - 1)])], strategy=InsertStrategy.NEW)
     return circuit
 
 
 def get_random_circuit(nr_qubits: int, added_depth: int):
     qubits = [cirq.NamedQubit(str(i)) for i in range(nr_qubits)]
     circuit = cirq.Circuit()
-    for i in range(nr_qubits):
-        circuit.append([cirq.H.on(qubits[i])])
+    # circuit.append([cirq.H.on(qubits[0])])
+    # circuit.append([cirq.H.on(qubits[-1])])
+    print(circuit)
 
     for i in range(added_depth):
-        if random.randint(1, 10) <= 7:
-            circuit = add_random_CNOT(circuit)
+        if random.randint(1, 10) <= 4:
+            circuit = add_random_CNOT(circuit, qubits)
         else:
-            circuit = add_random_H(circuit)
+            circuit = add_random_H(circuit, qubits)
 
     return circuit
 
 
 def run():
-    ep = 4000
+    ep = 1000
     # starting_circuit: cirq.Circuit = bernstein_vazirani(nr_bits=3, secret="110")
     # qbits = 3
-    qubit_trials = [15, 20, 25]
-    depth_trials = [15, 20, 25]
+    qubit_trials = [15, 16, 20, 25]
+    depth_trials = [15, 16, 20, 25]
 
     nr_qlearn_trials: int = 1
     for start in range(len(depth_trials)):
         qbits = qubit_trials[start:start+1][0]
         added_depth = depth_trials[start:start+1][0]
         starting_circuit = get_random_circuit(qbits, added_depth)
+        print(starting_circuit)
 
         circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10, nr_bits=qbits)
         circ_dec.get_random_decomposition_configuration()

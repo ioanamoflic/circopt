@@ -103,7 +103,6 @@ def plot_reward(x_axis: np.ndarray, y_axis: np.ndarray, xlabel: str, ylabel: str
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
     fig1.savefig('rewards.png', dpi=300)
-
     plt.close(fig1)
 
 
