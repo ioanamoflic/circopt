@@ -33,9 +33,6 @@ def get_random_circuit(nr_qubits: int, added_depth: int):
 
     qubits = [cirq.NamedQubit(str(i)) for i in range(nr_qubits)]
     circuit = cirq.Circuit()
-    # circuit.append([cirq.H.on(qubits[0])])
-    # circuit.append([cirq.H.on(qubits[-1])])
-    print(circuit)
 
     for i in range(added_depth):
         if random.randint(1, 10) <= 4:
@@ -51,7 +48,7 @@ def run():
     # starting_circuit: cirq.Circuit = bernstein_vazirani(nr_bits=3, secret="110")
     # qbits = 3
     qubit_trials = [5, 16, 20, 25]
-    depth_trials = [300, 16, 20, 25]
+    depth_trials = [200, 16, 20, 25]
 
     nr_qlearn_trials: int = 1
     for start in range(len(depth_trials)):
@@ -66,7 +63,7 @@ def run():
         for i in range(nr_qlearn_trials):
             conf: str = circ_dec.configurations.pop()
             decomposed_circuit = circ_dec.decompose_toffolis_in_circuit(conf)
-            possible_identities: List[Tuple[int, int]] = get_all_possible_identities(decomposed_circuit)
+            possible_identities, _ = get_all_possible_identities(decomposed_circuit)
             g.state_map_identity = dict()
             g.state_counter = dict()
             g.action_map = dict()

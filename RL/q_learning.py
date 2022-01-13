@@ -37,9 +37,12 @@ class QAgent:
             print('Episode', e)
 
             for i in range(self.max_iter_episode):
+                if not self.env.could_apply_on:
+                    break
 
                 if np.random.uniform(0, 1) < self.exploration_proba:
-                    action = circopt_utils.get_random_action(current_state, self.env.get_moment_to_apply_on())
+                    identity, qubit = self.env.get_random_identity()
+                    action = circopt_utils.get_random_action(identity, qubit)
                 else:
                     action = np.argmax(self.Q_table[current_state, :])
 

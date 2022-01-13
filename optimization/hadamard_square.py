@@ -9,7 +9,7 @@ class HadamardSquare(cirq.PointOptimizer):
         self.where_to = where_to
         self.only_count = only_count
         self.count = 0
-        self.moment_index = []
+        self.moment_index_qubit = []
 
     def optimization_at(self, circuit, index, op):
 
@@ -53,7 +53,7 @@ class HadamardSquare(cirq.PointOptimizer):
 
                                         if self.only_count:
                                             self.count += 1
-                                            self.moment_index.append((CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT, index))
+                                            self.moment_index_qubit.append((CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT, index, qubit))
                                             return None
 
                                         return cirq.PointOptimizationSummary(

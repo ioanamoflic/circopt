@@ -4,8 +4,8 @@ import pandas as pd
 import global_stuff as g
 import numpy as np
 import matplotlib.pyplot as plt
-from optimization.top_left_T import TopLeftT
-from optimization.one_H_left_2_right import OneHLeftTwoRight
+
+from optimization.optimize_circuits import CircuitIdentity
 from optimization.reverse_CNOT import ReverseCNOT
 from optimization.hadamard_square import HadamardSquare
 from optimization.top_left_hadamard import TopLeftHadamard
@@ -13,8 +13,8 @@ from optimization.one_H_left_2_right import OneHLeftTwoRight
 import random
 
 
-def get_random_action(current_state, moment) -> int:
-    tuple = (current_state, moment, random.randint(0, 1))
+def get_random_action(identity, qubit) -> int:
+    tuple = (identity, qubit, random.randint(0, 1))
     if tuple not in g.action_map.keys():
         g.action_map[tuple] = len(g.action_map)
     return g.action_map.get(tuple)
@@ -32,34 +32,31 @@ def sort_tuple_list(tup):
     return tup
 
 
-def get_all_possible_identities(circuit):
-    all_possibilities = []
-
-    # opt_circuit = OneHLeftTwoRight(only_count=True)
-    # opt_circuit.optimize_circuit(circuit)
-    # all_possibilities = all_possibilities + opt_circuit.moment_index
-    #
-    # opt_circuit = TopLeftT(only_count=True)
-    # opt_circuit.optimize_circuit(circuit)
-    # all_possibilities = all_possibilities + opt_circuit.moment_index
+def get_all_possible_identities(circuit) -> Tuple[List[Tuple[CircuitIdentity, int]], str]:
+    all_possibilities = list()
+    identity_state: str = ''
 
     opt_circuit = OneHLeftTwoRight(only_count=True)
     opt_circuit.optimize_circuit(circuit)
-    all_possibilities = all_possibilities + opt_circuit.moment_index
+    identity_state = identity_state + str(opt_circuit.count) + '_'
+    all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
 
     opt_circuit = TopLeftHadamard(only_count=True)
     opt_circuit.optimize_circuit(circuit)
-    all_possibilities = all_possibilities + opt_circuit.moment_index
+    identity_state = identity_state + str(opt_circuit.count) + '_'
+    all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
 
     opt_circuit = ReverseCNOT(only_count=True)
     opt_circuit.optimize_circuit(circuit)
-    all_possibilities = all_possibilities + opt_circuit.moment_index
+    identity_state = identity_state + str(opt_circuit.count) + '_'
+    all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
 
     opt_circuit = HadamardSquare(only_count=True)
     opt_circuit.optimize_circuit(circuit)
-    all_possibilities = all_possibilities + opt_circuit.moment_index
+    identity_state = identity_state + str(opt_circuit.count) + '_'
+    all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
 
-    return sort_tuple_list(all_possibilities)
+    return sort_tuple_list(all_possibilities), identity_state
 
 
 def to_str(config: List[int]) -> str:

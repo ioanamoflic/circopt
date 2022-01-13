@@ -7,7 +7,8 @@ class TopLeftHadamard(cirq.PointOptimizer):
         super().__init__()
         self.where_to = where_to
         self.only_count = only_count
-        self.moment_index = []
+        self.count = 0
+        self.moment_index_qubit = []
 
     def optimization_at(self, circuit, index, op):
         if index != self.where_to and not self.only_count:
@@ -33,7 +34,8 @@ class TopLeftHadamard(cirq.PointOptimizer):
                         new_op = [cirq.H.on(control), cirq.CNOT.on(control, target), cirq.H.on(control), cirq.H.on(target)]
 
                         if self.only_count:
-                            self.moment_index.append((CircuitIdentity.ONE_HADAMARD_UP_LEFT, index))
+                            self.count += 1
+                            self.moment_index_qubit.append((CircuitIdentity.ONE_HADAMARD_UP_LEFT, index, qubit))
                             return None
 
                         return cirq.PointOptimizationSummary(

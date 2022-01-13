@@ -1,6 +1,5 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
-import global_stuff as g
 
 
 class OneHLeftTwoRight(cirq.PointOptimizer):
@@ -9,7 +8,7 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
         self.where_to = where_to
         self.only_count = only_count
         self.count = 0
-        self.moment_index = []
+        self.moment_index_qubit = []
 
     def optimization_at(self, circuit, index, op):
 
@@ -47,12 +46,11 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
                                     isinstance(hadamard_down, cirq.GateOperation) and (hadamard_down.gate == cirq.H):
 
                                 if qubit == control:
-
                                     new_op = [cirq.H.on(target), cirq.CNOT.on(target, control)]
 
                                     if self.only_count:
                                         self.count += 1
-                                        self.moment_index.append((CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT, index))
+                                        self.moment_index_qubit.append((CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT, index, qubit))
                                         return None
 
                                     return cirq.PointOptimizationSummary(
