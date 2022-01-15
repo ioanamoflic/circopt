@@ -100,32 +100,6 @@ class CircuitEnvIdent(gym.Env):
 
     def _optimize(self) -> float:
         add_to_reward = 0.0
-        # len_circ_before = len(self.current_circuit)
-        # cncl = cnc.CancelNghHadamards(optimize_till=self.random_moment)
-        # cncl.optimize_circuit(self.current_circuit)
-        #
-        # cncl = cnc.CancelNghCNOTs(optimize_till=self.random_moment)
-        # cncl.optimize_circuit(self.current_circuit)
-        # add_to_reward += cncl.reward
-        #
-        # cncl = StickCNOTs(optimize_till=self.random_moment + 1)
-        # cncl.optimize_circuit(self.current_circuit)
-        # add_to_reward += cncl.reward
-        #
-        # cncl = StickMultiTarget(optimize_till=self.random_moment + 1)
-        # cncl.optimize_circuit(self.current_circuit)
-        # add_to_reward += cncl.reward
-        #
-        # opt_circuit = StickMultiTargetToCNOT(optimize_till=self.random_moment + 1)
-        # opt_circuit.optimize_circuit(self.current_circuit)
-        # add_to_reward += cncl.reward
-        #
-        # drop_empty = cirq.optimizers.DropEmptyMoments()
-        # drop_empty.optimize_circuit(self.current_circuit)
-        #
-        # len_circ_after = len(self.current_circuit)
-        #
-        # g.current_moment -= (len_circ_before - len_circ_after)
 
         self.cancel_cnots.optimize_circuit(self.current_circuit)
         self.drop_empty.optimize_circuit(self.current_circuit)

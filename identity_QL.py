@@ -1,5 +1,7 @@
 from typing import List, Tuple
 
+import random
+
 import cirq
 from cirq import InsertStrategy
 
@@ -7,9 +9,9 @@ from RL.circuit_env_identities import CircuitEnvIdent
 from RL.q_learning import QAgent
 import routing.routing_multiple as rm
 from circuits.bernstein import bernstein_vazirani
-import global_stuff as g
 from circopt_utils import get_all_possible_identities
-import random
+
+import global_stuff as g
 
 
 def add_random_CNOT(circuit: cirq.Circuit, qubits):
@@ -41,6 +43,9 @@ def get_random_circuit(nr_qubits: int, added_depth: int):
             circuit = add_random_H(circuit, qubits)
 
     return circuit
+
+
+
 
 
 def run():

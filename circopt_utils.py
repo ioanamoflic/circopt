@@ -1,4 +1,7 @@
+import random
+
 from typing import List, Tuple, Union
+
 import cirq
 import pandas as pd
 import global_stuff as g
@@ -6,11 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from optimization.optimize_circuits import CircuitIdentity
-from optimization.reverse_CNOT import ReverseCNOT
-from optimization.hadamard_square import HadamardSquare
-from optimization.top_left_hadamard import TopLeftHadamard
-from optimization.one_H_left_2_right import OneHLeftTwoRight
-import random
 
 
 def get_random_action(identity, qubit) -> int:
@@ -36,25 +34,11 @@ def get_all_possible_identities(circuit) -> Tuple[List[Tuple[CircuitIdentity, in
     all_possibilities = list()
     identity_state: str = ''
 
-    opt_circuit = OneHLeftTwoRight(only_count=True)
-    opt_circuit.optimize_circuit(circuit)
-    identity_state = identity_state + str(opt_circuit.count) + '_'
-    all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
-
-    opt_circuit = TopLeftHadamard(only_count=True)
-    opt_circuit.optimize_circuit(circuit)
-    identity_state = identity_state + str(opt_circuit.count) + '_'
-    all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
-
-    opt_circuit = ReverseCNOT(only_count=True)
-    opt_circuit.optimize_circuit(circuit)
-    identity_state = identity_state + str(opt_circuit.count) + '_'
-    all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
-
-    opt_circuit = HadamardSquare(only_count=True)
-    opt_circuit.optimize_circuit(circuit)
-    identity_state = identity_state + str(opt_circuit.count) + '_'
-    all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
+    # Iterate over the counting optimizers
+    for opt_circuit in g.counting_optimizers.values():
+        opt_circuit.optimize_circuit(circuit)
+        identity_state = identity_state + str(opt_circuit.count) + '_'
+        all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
 
     return sort_tuple_list(all_possibilities), identity_state
 
