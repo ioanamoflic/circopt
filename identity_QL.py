@@ -69,11 +69,13 @@ def run():
             conf: str = circ_dec.configurations.pop()
             decomposed_circuit = circ_dec.decompose_toffolis_in_circuit(conf)
             possible_identities, _ = get_all_possible_identities(decomposed_circuit)
+
             g.state_map_identity = dict()
             g.state_counter = dict()
             g.action_map = dict()
 
             env = CircuitEnvIdent(decomposed_circuit, could_apply_on=possible_identities)
+
             agent = QAgent(env, n_ep=ep, max_iter=2000, lr=0.01, gamma=0.97)
             agent.train()
             agent.show_evolution(filename=str(qbits) + '_qb_random.csv', bvz_bits=qbits, ep=ep)

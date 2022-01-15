@@ -3,6 +3,8 @@ from RL.circuit_env_identities import CircuitEnvIdent
 import circopt_utils
 import csv
 
+import global_stuff as g
+
 
 class QAgent:
     """
@@ -41,8 +43,8 @@ class QAgent:
                     break
 
                 if np.random.uniform(0, 1) < self.exploration_proba:
-                    identity, qubit = self.env.get_random_identity()
-                    action = circopt_utils.get_random_action(identity, qubit)
+                    identity, qubit = g.get_random_identity(self.env.could_apply_on)
+                    action = g.get_random_action(identity, qubit)
                 else:
                     action = np.argmax(self.Q_table[current_state, :])
 

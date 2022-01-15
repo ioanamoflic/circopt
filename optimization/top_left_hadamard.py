@@ -3,15 +3,14 @@ from optimization.optimize_circuits import CircuitIdentity
 import global_stuff as g
 
 class TopLeftHadamard(cirq.PointOptimizer):
-    def __init__(self, where_to: int = 0, only_count=False):
+    def __init__(self, only_count=False):
         super().__init__()
-        self.where_to = where_to
         self.only_count = only_count
         self.count = 0
         self.moment_index_qubit = []
 
     def optimization_at(self, circuit, index, op):
-        if index != self.where_to and not self.only_count:
+        if index != g.random_moment and not self.only_count:
             return None
 
         if g.my_isinstance(op, cirq.H):

@@ -26,6 +26,36 @@ counting_optimizers = {
     "hadamardsquare" : HadamardSquare(only_count=True),
 }
 
+working_optimizers = {
+    "onehleft" : OneHLeftTwoRight(),
+    "toplefth" : TopLeftHadamard(),
+    "rerversecnot" : ReverseCNOT(),
+    "hadamardsquare" : HadamardSquare(),
+}
+
+# Global randomness?
+import random
+random_index = 0
+random_moment = 0
+def get_random_identity(could_apply_on):
+    global random_index
+    random_index = random.randint(0, len(could_apply_on) - 1)
+
+    global random_moment
+    random_moment = could_apply_on[random_index][1]
+
+    qubit = could_apply_on[random_index][2]
+    identity = could_apply_on[random_index][0]
+
+    return identity, qubit
+
+def get_random_action(identity, qubit) -> int:
+    global action_map
+    tuple = (identity, qubit, random.randint(0, 1))
+    if tuple not in action_map.keys():
+        action_map[tuple] = len(action_map)
+    return action_map.get(tuple)
+
 # Alexandru: add LRU cache
 import cirq
 from functools import lru_cache

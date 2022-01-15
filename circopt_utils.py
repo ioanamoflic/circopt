@@ -11,13 +11,6 @@ import matplotlib.pyplot as plt
 from optimization.optimize_circuits import CircuitIdentity
 
 
-def get_random_action(identity, qubit) -> int:
-    tuple = (identity, qubit, random.randint(0, 1))
-    if tuple not in g.action_map.keys():
-        g.action_map[tuple] = len(g.action_map)
-    return g.action_map.get(tuple)
-
-
 def get_action_by_value(value: int) -> Union[Tuple[int, int, int], None]:
     for tuple, index in g.action_map.items():
         if index == value:
