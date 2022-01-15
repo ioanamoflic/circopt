@@ -1,6 +1,8 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
 import global_stuff as g
+import quantify.utils.misc_utils as mu
+
 
 class ReverseCNOT(cirq.PointOptimizer):
     def __init__(self, only_count=False):
@@ -13,7 +15,7 @@ class ReverseCNOT(cirq.PointOptimizer):
         if index != g.random_moment and not self.only_count:
             return None
 
-        if g.my_isinstance(op, cirq.CNOT):
+        if mu.my_isinstance(op, cirq.CNOT):
             control = op.qubits[0]
             target = op.qubits[1]
 

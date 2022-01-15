@@ -1,6 +1,8 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
 import global_stuff as g
+import quantify.utils.misc_utils as mu
+
 
 class TopLeftT(cirq.PointOptimizer):
     def __init__(self, only_count=False):
@@ -13,7 +15,7 @@ class TopLeftT(cirq.PointOptimizer):
         if index != g.random_moment and not self.only_count:
             return None
 
-        if g.my_isinstance(op, cirq.T):
+        if mu.my_instance(op, cirq.T):
 
             next_op_index = circuit.next_moment_operating_on(op.qubits, start_moment_index=index + 1)
 
@@ -26,7 +28,7 @@ class TopLeftT(cirq.PointOptimizer):
 
                 cnot = circuit.operation_at(qubit, next_op_index)
 
-                if g.my_isinstance(cnot, cirq.CNOT):
+                if mu.my_instance(cnot, cirq.CNOT):
                     control = cnot.qubits[0]
                     target = cnot.qubits[1]
 

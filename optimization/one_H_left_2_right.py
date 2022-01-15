@@ -1,6 +1,9 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
+
 import global_stuff as g
+import quantify.utils.misc_utils as mu
+
 
 class OneHLeftTwoRight(cirq.PointOptimizer):
     def __init__(self, where_to: int = 0, only_count=False):
@@ -14,7 +17,7 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
         if index != g.random_moment and not self.only_count:
             return None
 
-        if g.my_isinstance(op, cirq.H):
+        if mu.my_isinstance(op, cirq.H):
 
             next_op_index = circuit.next_moment_operating_on(op.qubits, start_moment_index=index + 1)
             qubit = op.qubits[0]
@@ -26,7 +29,7 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
 
                 cnot = circuit.operation_at(qubit, next_op_index)
 
-                if g.my_isinstance(cnot, cirq.CNOT):
+                if mu.my_isinstance(cnot, cirq.CNOT):
                     control = cnot.qubits[0]
                     target = cnot.qubits[1]
 
@@ -41,8 +44,8 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
                             hadamard_down = circuit.operation_at(cnot.qubits[0], next_op_index)
                             hadamard_up = circuit.operation_at(cnot.qubits[1], next_op_index)
 
-                            if g.my_isinstance(hadamard_up, cirq.H) and \
-                                    g.my_isinstance(hadamard_down, cirq.H):
+                            if mu.my_isinstance(hadamard_up, cirq.H) and \
+                                    mu.my_isinstance(hadamard_down, cirq.H):
 
                                 if qubit == control:
                                     new_op = [cirq.H.on(target), cirq.CNOT.on(target, control)]

@@ -1,5 +1,7 @@
 import cirq
 import global_stuff as g
+import quantify.utils.misc_utils as mu
+
 
 class StickMultiTargetToCNOT(cirq.PointOptimizer):
     def __init__(self, optimize_till: int = None):
@@ -21,7 +23,7 @@ class StickMultiTargetToCNOT(cirq.PointOptimizer):
 
             if next_op_index is not None:
                 cnot = circuit.operation_at(control_left, next_op_index)
-                if g.my_isinstance(cnot, cirq.CNOT):
+                if mu.my_isinstance(cnot, cirq.CNOT):
                     control_right = cnot.qubits[0]
                     target_right = cnot.qubits[1]
 

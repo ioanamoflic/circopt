@@ -55,13 +55,3 @@ def get_random_action(identity, qubit) -> int:
     if tuple not in action_map.keys():
         action_map[tuple] = len(action_map)
     return action_map.get(tuple)
-
-# Alexandru: add LRU cache
-import cirq
-from functools import lru_cache
-@lru_cache(maxsize=10000)
-def my_isinstance(operation, spec_gate):
-    return isinstance(operation, cirq.GateOperation) and (operation.gate == spec_gate)
-
-
-

@@ -20,7 +20,9 @@ from optimization.stick_multitarget import StickMultiTarget
 
 import circopt_utils
 import quantify.optimizers as cnc
+import quantify.utils.misc_utils as mu
 from optimization.optimize_circuits import CircuitIdentity
+
 import copy
 import random
 
@@ -123,7 +125,7 @@ class CircuitEnvIdent(gym.Env):
 
         for moment in self.current_circuit:
             for op in moment:
-                if g.my_isinstance(op, cirq.CNOT):
+                if mu.my_isinstance(op, cirq.CNOT):
                     q1 = qubit_dict[op.qubits[0]]
                     q2 = qubit_dict[op.qubits[1]]
                     degrees[q1: q1 + 1] += 1

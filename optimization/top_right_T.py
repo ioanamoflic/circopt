@@ -1,6 +1,8 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
 import global_stuff as g
+import quantify.utils.misc_utils as mu
+
 
 class TopRightT(cirq.PointOptimizer):
     def __init__(self, only_count=False):
@@ -14,7 +16,7 @@ class TopRightT(cirq.PointOptimizer):
         if index != g.random_moment and not self.only_count:
             return None
 
-        if g.my_isinstance(op, cirq.CNOT):
+        if mu.my_instance(op, cirq.CNOT):
             control = op.qubits[0]
             target = op.qubits[1]
 
@@ -24,7 +26,7 @@ class TopRightT(cirq.PointOptimizer):
 
                 t_gate = circuit.operation_at(control, next_op_index)
 
-                if t_gate is not None and g.my_isinstance(t_gate, cirq.T):
+                if t_gate is not None and mu.my_instance(t_gate, cirq.T):
                     qubit = t_gate.qubits[0]
 
                     new_op = [cirq.T.on(qubit), cirq.CNOT.on(control, target)]
