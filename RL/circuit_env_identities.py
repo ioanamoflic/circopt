@@ -52,6 +52,16 @@ class CircuitEnvIdent(gym.Env):
         self.random_index = 0
         self.random_moment = 0
 
+
+        # optimizers
+        self.cancel_cnots = cnc.CancelNghCNOTs()
+        self.drop_empty = cirq.optimizers.DropEmptyMoments()
+        self.stick_cnots = StickCNOTs()
+        self.cancel_hadamards = cnc.CancelNghHadamards()
+        self.stick_multitarget = StickMultiTarget()
+        self.stick_to_cnot = StickMultiTargetToCNOT()
+
+
     def _get_gate_count(self) -> int:
         counter: int = 0
         for moment in self.current_circuit:
@@ -117,29 +127,14 @@ class CircuitEnvIdent(gym.Env):
         #
         # g.current_moment -= (len_circ_before - len_circ_after)
 
-        cncl = cnc.CancelNghCNOTs()
-        cncl.optimize_circuit(self.current_circuit)
-
-        drop_empty = cirq.optimizers.DropEmptyMoments()
-        drop_empty.optimize_circuit(self.current_circuit)
-
-        cncl = StickCNOTs()
-        cncl.optimize_circuit(self.current_circuit)
-
-        cncl = cnc.CancelNghHadamards()
-        cncl.optimize_circuit(self.current_circuit)
-
-        cncl = StickMultiTarget()
-        cncl.optimize_circuit(self.current_circuit)
-
-        drop_empty = cirq.optimizers.DropEmptyMoments()
-        drop_empty.optimize_circuit(self.current_circuit)
-
-        opt_circuit = StickMultiTargetToCNOT()
-        opt_circuit.optimize_circuit(self.current_circuit)
-
-        drop_empty = cirq.optimizers.DropEmptyMoments()
-        drop_empty.optimize_circuit(self.current_circuit)
+        self.cancel_cnots.optimize_circuit(self.current_circuit)
+        self.drop_empty.optimize_circuit(self.current_circuit)
+        self.stick_cnots.optimize_circuit(self.current_circuit)
+        self.cancel_hadamards .optimize_circuit(self.current_circuit)
+        self.stick_multitarget.optimize_circuit(self.current_circuit)
+        self.drop_empty.optimize_circuit(self.current_circuit)
+        self.stick_to_cnot.optimize_circuit(self.current_circuit)
+        self.drop_empty.optimize_circuit(self.current_circuit)
 
         return add_to_reward
 
