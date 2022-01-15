@@ -1,6 +1,6 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
-
+import global_stuff as g
 
 class TopLeftHadamard(cirq.PointOptimizer):
     def __init__(self, where_to: int = 0, only_count=False):
@@ -14,7 +14,7 @@ class TopLeftHadamard(cirq.PointOptimizer):
         if index != self.where_to and not self.only_count:
             return None
 
-        if isinstance(op, cirq.GateOperation) and (op.gate == cirq.H):
+        if g.my_isinstance(op, cirq.H):
 
             next_op_index = circuit.next_moment_operating_on(op.qubits, start_moment_index=index + 1)
             qubit = op.qubits[0]
@@ -26,7 +26,7 @@ class TopLeftHadamard(cirq.PointOptimizer):
 
                 cnot = circuit.operation_at(qubit, next_op_index)
 
-                if isinstance(cnot, cirq.GateOperation) and (cnot.gate == cirq.CNOT):
+                if g.my_isinstance(cnot, cirq.CNOT):
                     control = cnot.qubits[0]
                     target = cnot.qubits[1]
 

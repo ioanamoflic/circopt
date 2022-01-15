@@ -1,6 +1,6 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
-
+import global_stuff as g
 
 class OneHLeftTwoRight(cirq.PointOptimizer):
     def __init__(self, where_to: int = 0, only_count=False):
@@ -15,7 +15,7 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
         if index != self.where_to and not self.only_count:
             return None
 
-        if isinstance(op, cirq.GateOperation) and (op.gate == cirq.H):
+        if g.my_isinstance(op, cirq.H):
 
             next_op_index = circuit.next_moment_operating_on(op.qubits, start_moment_index=index + 1)
             qubit = op.qubits[0]
@@ -27,7 +27,7 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
 
                 cnot = circuit.operation_at(qubit, next_op_index)
 
-                if isinstance(cnot, cirq.GateOperation) and (cnot.gate == cirq.CNOT):
+                if g.my_isinstance(cnot, cirq.CNOT):
                     control = cnot.qubits[0]
                     target = cnot.qubits[1]
 
@@ -42,8 +42,8 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
                             hadamard_down = circuit.operation_at(cnot.qubits[0], next_op_index)
                             hadamard_up = circuit.operation_at(cnot.qubits[1], next_op_index)
 
-                            if isinstance(hadamard_up, cirq.GateOperation) and (hadamard_up.gate == cirq.H) and \
-                                    isinstance(hadamard_down, cirq.GateOperation) and (hadamard_down.gate == cirq.H):
+                            if g.my_isinstance(hadamard_up, cirq.H) and \
+                                    g.my_isinstance(hadamard_down, cirq.H):
 
                                 if qubit == control:
                                     new_op = [cirq.H.on(target), cirq.CNOT.on(target, control)]

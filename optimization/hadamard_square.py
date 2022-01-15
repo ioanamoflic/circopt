@@ -16,7 +16,7 @@ class HadamardSquare(cirq.PointOptimizer):
         if index != self.where_to and not self.only_count:
             return None
 
-        if isinstance(op, cirq.GateOperation) and (op.gate == cirq.H):
+        if g.my_isinstance(op, cirq.H):
 
             next_op_index = circuit.next_moment_operating_on(op.qubits, start_moment_index=index + 1)
             qubit = op.qubits[0]
@@ -28,14 +28,14 @@ class HadamardSquare(cirq.PointOptimizer):
 
                 cnot = circuit.operation_at(qubit, next_op_index)
 
-                if isinstance(cnot, cirq.GateOperation) and (cnot.gate == cirq.CNOT):
+                if g.my_isinstance(cnot, cirq.CNOT):
                     control = cnot.qubits[0]
                     target = cnot.qubits[1]
 
                     if qubit == control:
                         downLeftHadamard = circuit.operation_at(target, index)
 
-                        if isinstance(downLeftHadamard, cirq.GateOperation) and (downLeftHadamard.gate == cirq.H):
+                        if g.my_isinstance(downLeftHadamard, cirq.H):
 
                             next_op_index = circuit.next_moment_operating_on(op.qubits, start_moment_index=index + 2)
 
@@ -46,8 +46,8 @@ class HadamardSquare(cirq.PointOptimizer):
                                 hadamard_down = circuit.operation_at(control, next_op_index)
                                 hadamard_up = circuit.operation_at(target, next_op_index)
 
-                                if isinstance(hadamard_up, cirq.GateOperation) and (hadamard_up.gate == cirq.H) and \
-                                        isinstance(hadamard_down, cirq.GateOperation) and (hadamard_down.gate == cirq.H):
+                                if g.my_isinstance(hadamard_up, cirq.H) and \
+                                        g.my_isinstance(hadamard_down, cirq.H):
 
                                         new_op = [cirq.CNOT.on(target, control)]
 

@@ -1,4 +1,5 @@
 import cirq
+import global_stuff as g
 
 
 class StickCNOTs(cirq.PointOptimizer):
@@ -11,7 +12,7 @@ class StickCNOTs(cirq.PointOptimizer):
         if self.optimize_till is not None and index >= self.optimize_till:
             return None
 
-        if isinstance(op, cirq.GateOperation) and (op.gate == cirq.CNOT):
+        if g.my_isinstance(op, cirq.CNOT):
             next_op_index = circuit.next_moment_operating_on([op.qubits[0]], start_moment_index=index + 1)
 
             # if next_op_index != index + 1:
@@ -25,7 +26,7 @@ class StickCNOTs(cirq.PointOptimizer):
                 cnot = circuit.operation_at(qubit, next_op_index)
                 # print(cnot)
 
-                if isinstance(cnot, cirq.GateOperation) and (cnot.gate == cirq.CNOT):
+                if g.my_isinstance(cnot, cirq.CNOT):
                     control = cnot.qubits[0]
                     target = cnot.qubits[1]
 

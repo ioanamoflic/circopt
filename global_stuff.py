@@ -26,6 +26,12 @@ counting_optimizers = {
     "hadamardsquare" : HadamardSquare(only_count=True),
 }
 
+# Alexandru: add LRU cache
+import cirq
+from functools import lru_cache
+@lru_cache(maxsize=10000)
+def my_isinstance(operation, spec_gate):
+    return isinstance(operation, cirq.GateOperation) and (operation.gate == spec_gate)
 
 
 
