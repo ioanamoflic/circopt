@@ -1,3 +1,4 @@
+#!/bin/bash
 echo "Create venv ..."
 python3 -m venv .venv
 
