@@ -43,12 +43,18 @@ class QAgent:
                     break
 
                 if np.random.uniform(0, 1) < self.exploration_proba:
-                    identity, qubit = g.get_random_identity(self.env.could_apply_on)
-                    action = g.get_random_action(identity, qubit)
+                    action = g.get_random_action(self.env.could_apply_on)
                 else:
                     action = np.argmax(self.Q_table[current_state, :])
 
+
                 next_state, reward, done, extra = self.env.step(action)
+
+                # #Alexandru
+                # import quantify.utils.misc_utils as mu
+                # print(mu.my_isinstance.cache_info())
+                # print(len(mu.my_cache), mu.my_cache_hits)
+
                 current_len = extra["current_len"]
 
                 self.Q_table[current_state, action] = (1 - self.learning_rate) * self.Q_table[

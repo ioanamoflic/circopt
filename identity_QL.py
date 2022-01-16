@@ -55,6 +55,8 @@ def run():
     qubit_trials = [5, 16, 20, 25]
     depth_trials = [200, 16, 20, 25]
 
+    random.seed(0)
+
     nr_qlearn_trials: int = 1
     for start in range(len(depth_trials)):
         qbits = qubit_trials[start:start+1][0]

@@ -37,21 +37,37 @@ working_optimizers = {
 import random
 random_index = 0
 random_moment = 0
-def get_random_identity(could_apply_on):
+def get_random_action(could_apply_on) -> int:
+    global action_map
     global random_index
-    random_index = random.randint(0, len(could_apply_on) - 1)
-
     global random_moment
+
+    random_index = random.randint(0, len(could_apply_on) - 1)
     random_moment = could_apply_on[random_index][1]
 
     qubit = could_apply_on[random_index][2]
     identity = could_apply_on[random_index][0]
 
-    return identity, qubit
-
-def get_random_action(identity, qubit) -> int:
-    global action_map
     tuple = (identity, qubit, random.randint(0, 1))
     if tuple not in action_map.keys():
         action_map[tuple] = len(action_map)
+
     return action_map.get(tuple)
+
+
+# Timing decorator from stackoverflow
+# https://stackoverflow.com/questions/1622943/timeit-versus-timing-decorator
+
+from functools import wraps
+from time import time
+
+def timing(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        ts = time()
+        result = f(*args, **kw)
+        te = time()
+        print('func:%r args:[%r, %r] took: %2.4f sec' % \
+          (f.__name__, args, kw, te-ts))
+        return result
+    return wrap

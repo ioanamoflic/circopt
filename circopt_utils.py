@@ -33,6 +33,10 @@ def get_all_possible_identities(circuit) -> Tuple[List[Tuple[CircuitIdentity, in
         identity_state = identity_state + str(opt_circuit.count) + '_'
         all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
 
+        # reset the optimizer
+        opt_circuit.count = 0
+        opt_circuit.moment_index_qubit.clear()
+
     return sort_tuple_list(all_possibilities), identity_state
 
 

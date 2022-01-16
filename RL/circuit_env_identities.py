@@ -24,8 +24,6 @@ import quantify.utils.misc_utils as mu
 from optimization.optimize_circuits import CircuitIdentity
 
 import copy
-import random
-
 
 class CircuitEnvIdent(gym.Env):
     """
@@ -54,10 +52,6 @@ class CircuitEnvIdent(gym.Env):
         # g.current_moment = 0
 
 
-        # self.random_index = 0
-        # self.random_moment = 0
-
-
         # optimizers
         self.cancel_cnots = cnc.CancelNghCNOTs()
         self.drop_empty = cirq.optimizers.DropEmptyMoments()
@@ -70,8 +64,7 @@ class CircuitEnvIdent(gym.Env):
     def _get_gate_count(self) -> int:
         counter: int = 0
         for moment in self.current_circuit:
-            for op in moment:
-                counter += 1
+            counter += len(moment)
         return counter
 
     def _apply_identity(self, action: int) -> None:
@@ -82,22 +75,18 @@ class CircuitEnvIdent(gym.Env):
         if action == 1:
             # try:
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
-                    # opt_circuit = TopLeftHadamard(where_to=self.random_moment)
                     g.working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
                     # g.current_moment = self.could_apply_on[0][1] + 2
 
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
-                    # opt_circuit = OneHLeftTwoRight(where_to=self.random_moment)
                     g.working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
                     # g.current_moment = self.could_apply_on[0][1] - 1
 
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
-                    # opt_circuit = HadamardSquare(where_to=self.random_moment)
                     g.working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
                     # g.current_moment = self.could_apply_on[0][1] - 2
 
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.REVERSED_CNOT:
-                    # opt_circuit = ReverseCNOT(where_to=self.random_moment)
                     g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
                     # g.current_moment = self.could_apply_on[0][1] + 2
             # except:
@@ -142,17 +131,18 @@ class CircuitEnvIdent(gym.Env):
 
     def _exhaust_optimization(self) -> float:
         reward = 0.0
-        prev_circ = ""
-        current_circ = circopt_utils.get_unique_representation(self.current_circuit)
-        while prev_circ != current_circ:
-            prev_circ = current_circ
+        prev_circ_repr = ""
+        curr_circ_repr = circopt_utils.get_unique_representation(self.current_circuit)
+
+        while prev_circ_repr != curr_circ_repr:
+            prev_circ_repr = curr_circ_repr
             reward += self._optimize()
-            current_circ = circopt_utils.get_unique_representation(self.current_circuit)
+            curr_circ_repr = circopt_utils.get_unique_representation(self.current_circuit)
 
         return reward
 
 
-
+    # @g.timing
     def step(self, action: int) -> Tuple[int, float, bool, dict]:
         # 1. Update the environment state based on the chosen action
         action_by_value = circopt_utils.get_action_by_value(action)
@@ -168,12 +158,22 @@ class CircuitEnvIdent(gym.Env):
         current_degree = self._get_circuit_degree()
         current_len: int = self._len_move_to_left()
         current_gate_count: int = self._get_gate_count()
-        # reward += pow((self.previous_degree - current_degree), (1 + self.previous_len / current_len))
-        # reward += pow(pow((self.previous_gate_count - current_gate_count), 2), (self.previous_len / current_len))
 
-        contrast = (self.previous_len - current_len) / (self.previous_len + current_len)
-        contrast = 1 - (contrast + 1) / 2
-        reward = np.exp(contrast)
+        # reward += pow((self.previous_degree - current_degree), (1 + self.previous_len / current_len))
+
+        mexp = max(0, self.previous_len - current_len)
+
+        contrast = (self.previous_gate_count - current_gate_count) / (self.previous_gate_count + current_gate_count)
+        # reward = pow(self.previous_gate_count - current_gate_count, 1 + mexp)
+        reward = pow(contrast, 1 + mexp)
+
+        # contrast1 = (self.len_start - current_len) / (self.len_start + current_len)
+        # contrast1 = 1 - (contrast1 + 1) / 2
+        # contrast2 = (self.previous_len - current_len) / (
+        #             self.previous_len + current_len)
+        # contrast2 = 1 - (contrast2 + 2) / 2
+        # reward = np.exp(contrast1)
+
         # reward = self.previous_len / self._len_move_to_left()
 
         self.previous_degree = current_degree
@@ -183,7 +183,7 @@ class CircuitEnvIdent(gym.Env):
         # 3. Store the new "observation" for the state (Identity config)
 
         # TODO: Alexandru
-        print("Reward", reward, "|C|", len(list(self.current_circuit.all_operations())))
+        print("Reward", reward, "|C|", current_len, self.len_start)
         # print(self.current_circuit)
         # input("Press any key...")
 
