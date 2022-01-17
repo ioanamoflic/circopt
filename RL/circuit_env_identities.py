@@ -25,6 +25,7 @@ from optimization.optimize_circuits import CircuitIdentity
 
 import copy
 
+
 class CircuitEnvIdent(gym.Env):
     """
     An OpenAI Gym circuit environment.
@@ -51,7 +52,6 @@ class CircuitEnvIdent(gym.Env):
         # g.state_map_identity[circopt_utils.get_unique_representation(self.current_circuit)] = len(g.state_map_identity)
         # g.current_moment = 0
 
-
         # optimizers
         self.cancel_cnots = cnc.CancelNghCNOTs()
         self.drop_empty = cirq.optimizers.DropEmptyMoments()
@@ -59,7 +59,6 @@ class CircuitEnvIdent(gym.Env):
         self.cancel_hadamards = cnc.CancelNghHadamards()
         self.stick_multitarget = StickMultiTarget()
         self.stick_to_cnot = StickMultiTargetToCNOT()
-
 
     def _get_gate_count(self) -> int:
         counter: int = 0
@@ -73,24 +72,24 @@ class CircuitEnvIdent(gym.Env):
             return
 
         if action == 1:
-            # try:
+                if self.could_apply_on[g.random_index][0] == CircuitIdentity.REVERSED_CNOT:
+                    g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
+                    return
+                    # g.current_moment = self.could_apply_on[0][1] + 2
+
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
                     g.working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
+                    return
                     # g.current_moment = self.could_apply_on[0][1] + 2
 
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
                     g.working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
+                    return
                     # g.current_moment = self.could_apply_on[0][1] - 1
 
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
                     g.working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
                     # g.current_moment = self.could_apply_on[0][1] - 2
-
-                if self.could_apply_on[g.random_index][0] == CircuitIdentity.REVERSED_CNOT:
-                    g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
-                    # g.current_moment = self.could_apply_on[0][1] + 2
-            # except:
-            #     print('A crapat pentru random index: ', g.random_index, ' si apply_on: ', len(self.could_apply_on))
 
     def _optimize(self) -> float:
         add_to_reward = 0.0
@@ -140,7 +139,6 @@ class CircuitEnvIdent(gym.Env):
             curr_circ_repr = circopt_utils.get_unique_representation(self.current_circuit)
 
         return reward
-
 
     # @g.timing
     def step(self, action: int) -> Tuple[int, float, bool, dict]:

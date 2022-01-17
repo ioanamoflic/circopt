@@ -10,6 +10,7 @@ from RL.q_learning import QAgent
 import routing.routing_multiple as rm
 from circuits.bernstein import bernstein_vazirani
 from circopt_utils import get_all_possible_identities
+import sys
 
 import global_stuff as g
 
@@ -45,15 +46,13 @@ def get_random_circuit(nr_qubits: int, added_depth: int):
     return circuit
 
 
-
-
-
 def run():
-    ep = 1000
+    ep = 3000
     # starting_circuit: cirq.Circuit = bernstein_vazirani(nr_bits=3, secret="110")
     # qbits = 3
     qubit_trials = [5, 16, 20, 25]
-    depth_trials = [200, 16, 20, 25]
+    depth_trials = [100, 150, 200, 250]
+    run_identifier = sys.argv[1]
 
     random.seed(0)
 
@@ -79,8 +78,9 @@ def run():
             env = CircuitEnvIdent(decomposed_circuit, could_apply_on=possible_identities)
 
             agent = QAgent(env, n_ep=ep, max_iter=2000, lr=0.01, gamma=0.97)
-            agent.train()
-            agent.show_evolution(filename=str(qbits) + '_qb_random.csv', bvz_bits=qbits, ep=ep)
+            agent.train(run_identifier, qbits)
+            filename = str(run_identifier) + '_' + str(qbits) + '_qb_random.csv'
+            agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)
 
 
 if __name__ == '__main__':

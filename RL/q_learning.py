@@ -1,8 +1,10 @@
+from typing import Tuple
+
 import numpy as np
 from RL.circuit_env_identities import CircuitEnvIdent
 import circopt_utils
 import csv
-
+import json
 import global_stuff as g
 
 
@@ -23,9 +25,9 @@ class QAgent:
         self.learning_rate: float = lr
         self.rewards_per_episode = list()
         self.final_len_per_episode = list()
-        self.Q_table: np.ndarray = np.zeros(shape=(10000, 10000))
+        self.Q_table: np.ndarray = np.zeros(shape=(2, 2))
 
-    def train(self) -> None:
+    def train(self, run_identifier, bits) -> None:
         """
         Performs off-policy control learning based on Bellman's equation.
         Q_table contains agent experience formed during training.
@@ -39,14 +41,10 @@ class QAgent:
             print('Episode', e)
 
             for i in range(self.max_iter_episode):
-                if not self.env.could_apply_on:
-                    break
-
                 if np.random.uniform(0, 1) < self.exploration_proba:
                     action = g.get_random_action(self.env.could_apply_on)
                 else:
                     action = np.argmax(self.Q_table[current_state, :])
-
 
                 next_state, reward, done, extra = self.env.step(action)
 
@@ -65,12 +63,25 @@ class QAgent:
                 total_episode_reward += reward
                 current_state = next_state
 
+                # dynamically allocate QTable while training
+                if self.Q_table.shape[0] >= len(g.state_map_identity.keys()):
+                    self.Q_table = np.vstack((self.Q_table, np.zeros(self.Q_table.shape[1])))
+
+                if self.Q_table.shape[1] >= len(g.action_map.keys()):
+                    self.Q_table = np.hstack((self.Q_table, np.zeros(self.Q_table.shape[0])[:, None]))
+
                 if done:
                     break
 
             self.exploration_proba = max(self.min_exploration_proba, np.exp(-self.exploration_decreasing_decay * e))
             self.rewards_per_episode.append(total_episode_reward)
             self.final_len_per_episode.append(current_len)
+
+            # save QTable state, maybe once a few episodes?
+            # if ep % 5 == 0:
+            np.save(str(run_identifier) + '_' + str(bits) + '_QTable.npy', self.Q_table)
+            json.dump(g.state_map_identity, open(str(run_identifier) + '_State_Map.txt', 'w'))
+            json.dump(str(g.action_map), open(str(run_identifier) + '_' + str(bits) + '_Action_Map.txt', 'w'))
 
     def show_evolution(self, filename: str = '3bits.csv', bvz_bits: int = 3, ep: int = 8000) -> None:
         """
