@@ -41,6 +41,9 @@ class QAgent:
             print('Episode', e)
 
             for i in range(self.max_iter_episode):
+                if not self.env.could_apply_on:
+                    break
+
                 if np.random.uniform(0, 1) < self.exploration_proba:
                     action = g.get_random_action(self.env.could_apply_on)
                 else:
@@ -64,10 +67,10 @@ class QAgent:
                 current_state = next_state
 
                 # dynamically allocate QTable while training
-                if self.Q_table.shape[0] >= len(g.state_map_identity.keys()):
+                if self.Q_table.shape[0] <= len(g.state_map_identity.keys()):
                     self.Q_table = np.vstack((self.Q_table, np.zeros(self.Q_table.shape[1])))
 
-                if self.Q_table.shape[1] >= len(g.action_map.keys()):
+                if self.Q_table.shape[1] <= len(g.action_map.keys()):
                     self.Q_table = np.hstack((self.Q_table, np.zeros(self.Q_table.shape[0])[:, None]))
 
                 if done:

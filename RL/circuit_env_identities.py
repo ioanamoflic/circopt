@@ -72,24 +72,25 @@ class CircuitEnvIdent(gym.Env):
             return
 
         if action == 1:
-                if self.could_apply_on[g.random_index][0] == CircuitIdentity.REVERSED_CNOT:
-                    g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
-                    return
-                    # g.current_moment = self.could_apply_on[0][1] + 2
 
-                if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
-                    g.working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
-                    return
-                    # g.current_moment = self.could_apply_on[0][1] + 2
+            if self.could_apply_on[g.random_index][0] == CircuitIdentity.REVERSED_CNOT:
+                g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
+                return
+                # g.current_moment = self.could_apply_on[0][1] + 2
 
-                if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
-                    g.working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
-                    return
-                    # g.current_moment = self.could_apply_on[0][1] - 1
+            if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
+                g.working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
+                return
+                # g.current_moment = self.could_apply_on[0][1] + 2
 
-                if self.could_apply_on[g.random_index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
-                    g.working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
-                    # g.current_moment = self.could_apply_on[0][1] - 2
+            if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
+                g.working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
+                return
+                # g.current_moment = self.could_apply_on[0][1] - 1
+
+            if self.could_apply_on[g.random_index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
+                g.working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
+                # g.current_moment = self.could_apply_on[0][1] - 2
 
     def _optimize(self) -> float:
         add_to_reward = 0.0
@@ -97,7 +98,7 @@ class CircuitEnvIdent(gym.Env):
         self.cancel_cnots.optimize_circuit(self.current_circuit)
         self.drop_empty.optimize_circuit(self.current_circuit)
         self.stick_cnots.optimize_circuit(self.current_circuit)
-        self.cancel_hadamards .optimize_circuit(self.current_circuit)
+        self.cancel_hadamards.optimize_circuit(self.current_circuit)
         self.stick_multitarget.optimize_circuit(self.current_circuit)
         self.drop_empty.optimize_circuit(self.current_circuit)
         self.stick_to_cnot.optimize_circuit(self.current_circuit)
@@ -202,7 +203,7 @@ class CircuitEnvIdent(gym.Env):
             g.state_map_identity[identity_int_string] = len(g.state_map_identity)
         observation: int = g.state_map_identity.get(identity_int_string)
 
-        if not self.could_apply_on:
+        if len(self.could_apply_on) == 0:
             self.done = True
 
         return observation, reward, self.done, {"current_len": current_len}
