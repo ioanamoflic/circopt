@@ -80,7 +80,7 @@ def run():
 
             agent = QAgent(env, n_ep=ep, max_iter=1000, lr=0.01, gamma=0.97)
             agent.train(run_identifier, qbits)
-            filename = run_identifier + '_' + str(qbits) + '_qb_random.csv'
+            filename = f'{run_identifier}_{qbits}_qb_random.csv'
             agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)
 
 

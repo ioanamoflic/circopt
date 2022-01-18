@@ -82,10 +82,10 @@ class QAgent:
 
             # save QTable state, maybe once a few episodes?
             # if ep % 5 == 0:
-            np.save(run_identifier + '_' + str(bits) + '_QTable.npy', self.Q_table)
-            with open(run_identifier + '_State_Map.txt', 'w') as f1:
+            np.save(f'{run_identifier}_{bits}_QTable.npy', self.Q_table)
+            with open(f'{run_identifier}_State_Map.txt', 'w') as f1:
                 json.dump(g.state_map_identity, f1)
-            with open(run_identifier + '_' + str(bits) + '_Action_Map.txt', 'w') as f2:
+            with open( f'{run_identifier}_Action_Map.txt', 'w') as f2:
                 json.dump(str(g.action_map), f2)
 
     def show_evolution(self, filename: str = '3bits.csv', bvz_bits: int = 3, ep: int = 8000) -> None:
