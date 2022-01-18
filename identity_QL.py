@@ -47,14 +47,15 @@ def get_random_circuit(nr_qubits: int, added_depth: int):
 
 
 def run():
-    ep = 3000
-    # starting_circuit: cirq.Circuit = bernstein_vazirani(nr_bits=3, secret="110")
-    # qbits = 3
-    qubit_trials = [5, 16, 20, 25]
-    depth_trials = [100, 150, 200, 250]
+    ep = 1000
     run_identifier = sys.argv[1]
+    qubits = sys.argv[2]
+    depth = sys.argv[3]
 
     random.seed(0)
+
+    qubit_trials = [int(qubits)]
+    depth_trials = [int(depth)]
 
     nr_qlearn_trials: int = 1
     for start in range(len(depth_trials)):
@@ -77,9 +78,9 @@ def run():
 
             env = CircuitEnvIdent(decomposed_circuit, could_apply_on=possible_identities)
 
-            agent = QAgent(env, n_ep=ep, max_iter=2000, lr=0.01, gamma=0.97)
+            agent = QAgent(env, n_ep=ep, max_iter=1000, lr=0.01, gamma=0.97)
             agent.train(run_identifier, qbits)
-            filename = str(run_identifier) + '_' + str(qbits) + '_qb_random.csv'
+            filename = run_identifier + '_' + str(qbits) + '_qb_random.csv'
             agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)
 
 

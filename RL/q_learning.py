@@ -27,7 +27,7 @@ class QAgent:
         self.final_len_per_episode = list()
         self.Q_table: np.ndarray = np.zeros(shape=(2, 2))
 
-    def train(self, run_identifier, bits) -> None:
+    def train(self, run_identifier: str, bits: int) -> None:
         """
         Performs off-policy control learning based on Bellman's equation.
         Q_table contains agent experience formed during training.
@@ -79,9 +79,11 @@ class QAgent:
 
             # save QTable state, maybe once a few episodes?
             # if ep % 5 == 0:
-            np.save(str(run_identifier) + '_' + str(bits) + '_QTable.npy', self.Q_table)
-            json.dump(g.state_map_identity, open(str(run_identifier) + '_State_Map.txt', 'w'))
-            json.dump(str(g.action_map), open(str(run_identifier) + '_' + str(bits) + '_Action_Map.txt', 'w'))
+            np.save(run_identifier + '_' + str(bits) + '_QTable.npy', self.Q_table)
+            with open(run_identifier + '_State_Map.txt', 'w') as f1:
+                json.dump(g.state_map_identity, f1)
+            with open(run_identifier + '_' + str(bits) + '_Action_Map.txt', 'w') as f2:
+                json.dump(str(g.action_map), f2)
 
     def show_evolution(self, filename: str = '3bits.csv', bvz_bits: int = 3, ep: int = 8000) -> None:
         """
