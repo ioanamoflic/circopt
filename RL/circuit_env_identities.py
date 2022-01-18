@@ -72,6 +72,8 @@ class CircuitEnvIdent(gym.Env):
             return
 
         if action == 1:
+            if g.random_index == len(self.could_apply_on):
+                g.random_index -= 1
 
             if self.could_apply_on[g.random_index][0] == CircuitIdentity.REVERSED_CNOT:
                 g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
