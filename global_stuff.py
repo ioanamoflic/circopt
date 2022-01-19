@@ -42,7 +42,7 @@ def get_random_action(could_apply_on) -> int:
     global random_index
     global random_moment
 
-    random_index = random.randint(0, len(could_apply_on) - 2)
+    random_index = random.randint(0, len(could_apply_on) - 1)
     random_moment = could_apply_on[random_index][1]
 
     qubit = could_apply_on[random_index][2]

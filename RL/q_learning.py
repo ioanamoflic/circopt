@@ -66,7 +66,6 @@ class QAgent:
                 total_episode_reward += reward
                 current_state = next_state
 
-                # dynamically allocate QTable while training
                 if self.Q_table.shape[0] <= len(g.state_map_identity.keys()):
                     self.Q_table = np.vstack((self.Q_table, np.zeros(self.Q_table.shape[1])))
 
@@ -80,12 +79,11 @@ class QAgent:
             self.rewards_per_episode.append(total_episode_reward)
             self.final_len_per_episode.append(current_len)
 
-            # save QTable state, maybe once a few episodes?
-            # if ep % 5 == 0:
+            # save QTable state
             np.save(f'{run_identifier}_{bits}_QTable.npy', self.Q_table)
-            with open(f'{run_identifier}_State_Map.txt', 'w') as f1:
+            with open(f'{run_identifier}_{bits}_State_Map.txt', 'w') as f1:
                 json.dump(g.state_map_identity, f1)
-            with open( f'{run_identifier}_Action_Map.txt', 'w') as f2:
+            with open(f'{run_identifier}_{bits}_Action_Map.txt', 'w') as f2:
                 json.dump(str(g.action_map), f2)
 
     def show_evolution(self, filename: str = '3bits.csv', bvz_bits: int = 3, ep: int = 8000) -> None:

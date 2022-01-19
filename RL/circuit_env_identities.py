@@ -24,8 +24,8 @@ import quantify.utils.misc_utils as mu
 from optimization.optimize_circuits import CircuitIdentity
 import logging
 import copy
-
-logging.basicConfig(filename='logfile.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+import time
+logging.basicConfig(filename='logfile.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
 
 
 class CircuitEnvIdent(gym.Env):
@@ -35,24 +35,18 @@ class CircuitEnvIdent(gym.Env):
     metadata = {'render.modes': ['human']}
     NO_ACTIONS = 2
 
-    def __init__(self, starting_circuit: cirq.Circuit, could_apply_on, device_graph: nx.Graph = None):
+    def __init__(self, starting_circuit: cirq.Circuit):
         super(CircuitEnvIdent, self).__init__()
         self.current_action: Tuple[int, int, int] = (0, 0, 0)
         self.starting_circuit: cirq.Circuit = starting_circuit
         self.current_circuit: cirq.Circuit = copy.deepcopy(self.starting_circuit)
         self.done: bool = False
         self.len_start: int = self._len_move_to_left()
-        self.reward_range: Tuple[float, float] = (0.0, 3.0)
-        self.action_space: Discrete = spaces.Discrete(2)
-        self.observation_space: Discrete = spaces.Discrete((pow(self.NO_ACTIONS, len(self.starting_circuit))))
-        self.could_apply_on: List[Tuple[int, int]] = could_apply_on
+        self.could_apply_on: List[Tuple[int, int]] = list()
 
         self.previous_degree = self._get_circuit_degree()
         self.previous_gate_count: int = self._get_gate_count()
         self.previous_len: float = self._len_move_to_left()
-        self.episode_is_done: bool = False
-        # g.state_map_identity[circopt_utils.get_unique_representation(self.current_circuit)] = len(g.state_map_identity)
-        # g.current_moment = 0
 
         # optimizers
         self.cancel_cnots = cnc.CancelNghCNOTs()
@@ -70,7 +64,6 @@ class CircuitEnvIdent(gym.Env):
 
     def _apply_identity(self, action: int) -> None:
         if action == 0:
-            # g.current_moment = self.could_apply_on[0][1] + 1
             return
 
         if action == 1:
@@ -78,35 +71,34 @@ class CircuitEnvIdent(gym.Env):
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.REVERSED_CNOT:
                     g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
                     return
-                    # g.current_moment = self.could_apply_on[0][1] + 2
 
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
                     g.working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
                     return
-                    # g.current_moment = self.could_apply_on[0][1] + 2
 
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
                     g.working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
                     return
-                    # g.current_moment = self.could_apply_on[0][1] - 1
 
                 if self.could_apply_on[g.random_index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
                     g.working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
-                    # g.current_moment = self.could_apply_on[0][1] - 2
+
             except IndexError:
                 logging.error(f'Index out of range for index {g.random_index} and list size {len(self.could_apply_on)}')
 
     def _optimize(self) -> float:
         add_to_reward = 0.0
-
-        self.cancel_cnots.optimize_circuit(self.current_circuit)
-        self.drop_empty.optimize_circuit(self.current_circuit)
-        self.stick_cnots.optimize_circuit(self.current_circuit)
-        self.cancel_hadamards.optimize_circuit(self.current_circuit)
-        self.stick_multitarget.optimize_circuit(self.current_circuit)
-        self.drop_empty.optimize_circuit(self.current_circuit)
-        self.stick_to_cnot.optimize_circuit(self.current_circuit)
-        self.drop_empty.optimize_circuit(self.current_circuit)
+        try:
+            self.cancel_cnots.optimize_circuit(self.current_circuit)
+            self.drop_empty.optimize_circuit(self.current_circuit)
+            self.stick_cnots.optimize_circuit(self.current_circuit)
+            self.cancel_hadamards.optimize_circuit(self.current_circuit)
+            self.stick_multitarget.optimize_circuit(self.current_circuit)
+            self.drop_empty.optimize_circuit(self.current_circuit)
+            self.stick_to_cnot.optimize_circuit(self.current_circuit)
+            self.drop_empty.optimize_circuit(self.current_circuit)
+        except Exception as arg:
+            logging.error(f'Error while applying optimization : {arg}')
 
         return add_to_reward
 
@@ -130,7 +122,7 @@ class CircuitEnvIdent(gym.Env):
         n_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)
         return len(n_circuit)
 
-    def _break_moments(self):
+    def _break_moments(self) -> None:
         self.current_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.NEW)
 
     def _exhaust_optimization(self) -> float:

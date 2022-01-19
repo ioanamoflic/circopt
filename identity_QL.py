@@ -47,7 +47,7 @@ def get_random_circuit(nr_qubits: int, added_depth: int):
 
 
 def run():
-    ep = 1000
+    ep = 3000
     run_identifier = sys.argv[1]
     qubits = sys.argv[2]
     depth = sys.argv[3]
@@ -76,7 +76,7 @@ def run():
             g.state_counter = dict()
             g.action_map = dict()
 
-            env = CircuitEnvIdent(decomposed_circuit, could_apply_on=possible_identities)
+            env = CircuitEnvIdent(decomposed_circuit)
 
             agent = QAgent(env, n_ep=ep, max_iter=1000, lr=0.01, gamma=0.97)
             agent.train(run_identifier, qbits)
