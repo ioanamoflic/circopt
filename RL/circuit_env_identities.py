@@ -25,6 +25,7 @@ from optimization.optimize_circuits import CircuitIdentity
 import logging
 import copy
 import time
+
 logging.basicConfig(filename='logfile.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
 
 
@@ -191,18 +192,7 @@ class CircuitEnvIdent(gym.Env):
         # count every time a state is encountered
         # observation: int = g.state_map_identity.get(circuit_as_string)
 
-        # will be replaced with a future 'get_next_identity'
-        self.could_apply_on, identity_int_string = circopt_utils.get_all_possible_identities(self.current_circuit)
-        # self.could_apply_on = [i for i in self.could_apply_on if i[1] >= g.current_moment]
-
-        if identity_int_string not in g.state_map_identity.keys():
-            g.state_map_identity[identity_int_string] = len(g.state_map_identity)
-        observation: int = g.state_map_identity.get(identity_int_string)
-
-        if len(self.could_apply_on) == 0:
-            self.done = True
-
-        return observation, reward, self.done, {"current_len": current_len}
+        return 0, reward, self.done, {"current_len": current_len}
 
     def reset(self):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
