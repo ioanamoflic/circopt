@@ -1,49 +1,14 @@
-from typing import List, Tuple
-
 import random
-
-import cirq
-from cirq import InsertStrategy
 
 from RL.circuit_env_identities import CircuitEnvIdent
 from RL.q_learning import QAgent
 import routing.routing_multiple as rm
 from circuits.bernstein import bernstein_vazirani
+from circuits.ioana_random import *
 from circopt_utils import get_all_possible_identities
 import sys
 
 import global_stuff as g
-
-
-def add_random_CNOT(circuit: cirq.Circuit, qubits):
-    control = qubits[random.randint(0, len(qubits) - 1)]
-    target = qubits[random.randint(0, len(qubits) - 1)]
-
-    while control == target:
-        target = qubits[random.randint(0, len(qubits) - 1)]
-
-    circuit.append([cirq.CNOT.on(control, target)], strategy=InsertStrategy.NEW)
-    return circuit
-
-
-def add_random_H(circuit: cirq.Circuit, qubits):
-    circuit.append([cirq.H.on(qubits[random.randint(0, len(qubits) - 1)])], strategy=InsertStrategy.NEW)
-    return circuit
-
-
-def get_random_circuit(nr_qubits: int, added_depth: int):
-    # TODO: Use maybe https://quantumai.google/reference/python/cirq/testing/random_circuit
-
-    qubits = [cirq.NamedQubit(str(i)) for i in range(nr_qubits)]
-    circuit = cirq.Circuit()
-
-    for i in range(added_depth):
-        if random.randint(1, 10) <= 4:
-            circuit = add_random_CNOT(circuit, qubits)
-        else:
-            circuit = add_random_H(circuit, qubits)
-
-    return circuit
 
 
 def run():
