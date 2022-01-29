@@ -5,6 +5,8 @@ import quantify.utils.misc_utils as mu
 
 
 class ReverseCNOT(cirq.PointOptimizer):
+# from optimization.parallel_point_optimizer import ParallelPointOptimizer
+# class ReverseCNOT(ParallelPointOptimizer):
     def __init__(self, only_count=False):
         super().__init__()
         self.only_count = only_count

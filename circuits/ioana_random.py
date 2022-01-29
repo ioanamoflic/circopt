@@ -17,13 +17,15 @@ def add_random_H(circuit: cirq.Circuit, qubits):
     return circuit
 
 
-def get_random_circuit(nr_qubits: int, added_depth: int):
+def get_random_circuit(nr_qubits: int, big_o_const: int):
     # TODO: Use maybe https://quantumai.google/reference/python/cirq/testing/random_circuit
 
     qubits = [cirq.NamedQubit(str(i)) for i in range(nr_qubits)]
     circuit = cirq.Circuit()
 
-    for i in range(added_depth):
+    degree = 4
+    total_depth = big_o_const * nr_qubits ** degree
+    for i in range(total_depth):
         if random.randint(1, 10) <= 4:
             circuit = add_random_CNOT(circuit, qubits)
         else:

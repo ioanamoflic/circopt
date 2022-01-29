@@ -71,3 +71,23 @@ def timing(f):
           (f.__name__, args, kw, te-ts))
         return result
     return wrap
+
+## Parallelisation in non-orthodox way ?
+from optimization.parallel_point_optimizer import ParallelPointOptimizer
+from cirq import PointOptimizer
+
+def parallelise_optimizers():
+    parallel = ParallelPointOptimizer()
+    for optimizer in counting_optimizers:
+        optimizer.optimize_circuit = parallel.optimize_circuit
+
+    for optimizer in working_optimizers:
+        optimizer.optimize_circuit = parallel.optimize_circuit
+
+def deparallelise_optimizers():
+    pointopt = PointOptimizer()
+    for optimizer in counting_optimizers:
+        optimizer.optimize_circuit = pointopt.optimize_circuit
+
+    for optimizer in working_optimizers:
+        optimizer.optimize_circuit = pointopt.optimize_circuit

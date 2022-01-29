@@ -10,23 +10,48 @@ import sys
 
 import global_stuff as g
 
+def benchmark_parallelisation():
+
+    print("compile...")
+    starting_circuit = get_random_circuit(nr_qubits=10, big_o_const=10)
+
+    from optimization.parallel_point_optimizer import ParallelPointOptimizer
+
+    paralel = ParallelPointOptimizer()
+
+    for i in range(2):
+        print(f"optimize...parallel={i}")
+        from optimization.reverse_CNOT import ReverseCNOT
+        my_opt = ReverseCNOT()
+        if i == 1:
+            my_opt.optimize_circuit = paralel.optimize_circuit
+
+        from time import time
+        ts = time()
+        my_opt.optimize_circuit(starting_circuit)
+        te = time()
+
+        print(f"{te - ts}seconds")
+
+    return
 
 def run():
+
     ep = 3000
     run_identifier = sys.argv[1]
     qubits = sys.argv[2]
-    depth = sys.argv[3]
+    constant = sys.argv[3]
 
     random.seed(0)
 
     qubit_trials = [int(qubits)]
-    depth_trials = [int(depth)]
+    constant_trials = [int(constant)]
 
     nr_qlearn_trials: int = 1
-    for start in range(len(depth_trials)):
+    for start in range(len(constant_trials)):
         qbits = qubit_trials[start:start+1][0]
-        added_depth = depth_trials[start:start+1][0]
-        starting_circuit = get_random_circuit(qbits, added_depth)
+        added_depth = constant_trials[start:start+1][0]
+        starting_circuit = get_random_circuit(nr_qubits=qbits, big_o_const=added_depth)
         print(starting_circuit)
 
         circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10, nr_bits=qbits)
