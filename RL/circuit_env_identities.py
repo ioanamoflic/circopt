@@ -1,30 +1,18 @@
-from typing import Tuple, List
-
-import networkx as nx
+from typing import Tuple, List, Union, Any
 import numpy as np
-
 import gym
-from gym import spaces
-from gym.spaces import Discrete
-
 import cirq
 import global_stuff as g
 from optimization.stick_multitarget_to_CNOT import StickMultiTargetToCNOT
-
-from optimization.top_left_hadamard import TopLeftHadamard
-from optimization.one_H_left_2_right import OneHLeftTwoRight
-from optimization.reverse_CNOT import ReverseCNOT
-from optimization.hadamard_square import HadamardSquare
 from optimization.stick_CNOTs import StickCNOTs
 from optimization.stick_multitarget import StickMultiTarget
-
 import circopt_utils
 import quantify.optimizers as cnc
 import quantify.utils.misc_utils as mu
 from optimization.optimize_circuits import CircuitIdentity
 import logging
 import copy
-import time
+import random
 
 logging.basicConfig(filename='logfile.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
 
@@ -63,40 +51,52 @@ class CircuitEnvIdent(gym.Env):
             counter += len(moment)
         return counter
 
-    def _apply_identity(self, action: int) -> None:
-        if action == 0:
+    def _get_random_action(self) -> Tuple[Tuple[int, Any, int], int]:
+        random_index = random.randint(0, len(self.could_apply_on) - 1)
+        g.random_moment = self.could_apply_on[random_index][1]
+        qubit = self.could_apply_on[random_index][2]
+        identity = self.could_apply_on[random_index][0]
+
+        tup = (identity, qubit, random.randint(0, 1))
+        if tup not in g.action_map.keys():
+            g.action_map[tup] = len(g.action_map)
+
+        return tup, random_index
+
+    def _apply_identity(self, action: int, index: int) -> None:
+        if action == 0 or index == -1:
             return
 
         if action == 1:
-            try:
-                if self.could_apply_on[g.random_index][0] == CircuitIdentity.REVERSED_CNOT:
-                    g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
-                    return
+            if self.could_apply_on[index][0] == CircuitIdentity.REVERSED_CNOT:
+                g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
+                return
 
-                if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
-                    g.working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
-                    return
+            if self.could_apply_on[index][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
+                g.working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
+                return
 
-                if self.could_apply_on[g.random_index][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
-                    g.working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
-                    return
+            if self.could_apply_on[index][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
+                g.working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
+                return
 
-                if self.could_apply_on[g.random_index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
-                    g.working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
-
-            except IndexError:
-                logging.error(f'Index out of range for index {g.random_index} and list size {len(self.could_apply_on)}')
+            if self.could_apply_on[index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
+                g.working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
 
     def _optimize(self) -> float:
         add_to_reward = 0.0
         try:
             self.cancel_cnots.optimize_circuit(self.current_circuit)
+            add_to_reward += self.cancel_cnots.reward
             self.drop_empty.optimize_circuit(self.current_circuit)
             self.stick_cnots.optimize_circuit(self.current_circuit)
+            add_to_reward += self.stick_cnots.reward
             self.cancel_hadamards.optimize_circuit(self.current_circuit)
             self.stick_multitarget.optimize_circuit(self.current_circuit)
+            add_to_reward += self.stick_multitarget.reward
             self.drop_empty.optimize_circuit(self.current_circuit)
             self.stick_to_cnot.optimize_circuit(self.current_circuit)
+            add_to_reward += self.stick_to_cnot.reward
             self.drop_empty.optimize_circuit(self.current_circuit)
         except Exception as arg:
             logging.error(f'Error while applying optimization : {arg}')
@@ -123,9 +123,6 @@ class CircuitEnvIdent(gym.Env):
         n_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)
         return len(n_circuit)
 
-    def _break_moments(self) -> None:
-        self.current_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.NEW)
-
     def _exhaust_optimization(self) -> float:
         reward = 0.0
         prev_circ_repr = ""
@@ -139,70 +136,74 @@ class CircuitEnvIdent(gym.Env):
         return reward
 
     # @g.timing
-    def step(self, action: int) -> Tuple[int, float, bool, dict]:
-        # 1. Update the environment state based on the chosen action
-        action_by_value = circopt_utils.get_action_by_value(action)
-        if action_by_value is not None:
-            self.current_action = action_by_value
+    def step(self, action: Union[int, str]) -> Tuple[int, float, bool, dict]:
+        # 1. ---------------- Update the environment state based on the chosen action ----------------
 
-        self._apply_identity(self.current_action[2])
-        reward: float = self._exhaust_optimization()
+        if action == 'random':
+            self.current_action, list_index = self._get_random_action()
+        else:
+            self.current_action = circopt_utils.get_action_by_value(action)
+            list_index = [index for index, value in enumerate(self.could_apply_on)
+                          if value[0] == self.current_action[0] and value[2] == self.current_action[1]]
 
-        # 2. Calculate the "reward" for the new state of the circuit
-        # print('previous degree: ', self.previous_degree)
+            if len(list_index) > 0:
+                list_index = list_index[0]
+                g.random_moment = self.could_apply_on[list_index][1]
+            else:
+                list_index = -1
+
+        print(f'Step self.could_apply_on: {self.could_apply_on}')
+        print('Current circuit: \n', self.current_circuit)
+        print('Chosen action: ', self.current_action)
+
+        self._apply_identity(self.current_action[2], index=list_index)
+        self._exhaust_optimization()
+
+        print('Optimized circuit: \n', self.current_circuit)
 
         current_degree = self._get_circuit_degree()
         current_len: int = self._len_move_to_left()
         current_gate_count: int = self._get_gate_count()
 
-        # reward += pow((self.previous_degree - current_degree), (1 + self.previous_len / current_len))
+        extra = dict()
+        extra["current_len"] = current_len
+        extra["action"] = g.state_map_identity.get(self.current_action)
 
-        mexp = max(0, self.previous_len - current_len)
+        # 2. ---------------- Calculate the "reward" for the new state of the circuit ----------------
+
+        mexp = max(0.0, self.previous_len - current_len)
         contrast = (self.previous_gate_count - current_gate_count) / (self.previous_gate_count + current_gate_count)
         contrast += 2
-        # reward = pow(self.previous_gate_count - current_gate_count, 1 + mexp)
         reward = pow(contrast, 1 + mexp)
+        print(f'Reward: {reward}'
+              f' contrast: {contrast}'
+              f' mexp: {mexp} '
+              f' current_len: {current_len}'
+              f' prev_len: {self.previous_len}'
+              f' current_gate_count: {current_gate_count} '
+              f' prev_gate_count: {self.previous_gate_count}')
 
-        # contrast1 = (self.len_start - current_len) / (self.len_start + current_len)
-        # contrast1 = 1 - (contrast1 + 1) / 2
-        # contrast2 = (self.previous_len - current_len) / (
-        #             self.previous_len + current_len)
-        # contrast2 = 1 - (contrast2 + 2) / 2
-        # reward = np.exp(contrast1)
+        # 3. ---------------- Store the new "observation" for the state (Identity config) ----------------
 
-        # reward = self.previous_len / self._len_move_to_left()
+        self.could_apply_on, identity_int_string = circopt_utils.get_all_possible_identities(self.current_circuit)
+        if identity_int_string not in g.state_map_identity.keys():
+            g.state_map_identity[identity_int_string] = len(g.state_map_identity)
 
+        observation = g.state_map_identity.get(identity_int_string)
         self.previous_degree = current_degree
         self.previous_gate_count = current_gate_count
         self.previous_len = current_len
 
-        # 3. Store the new "observation" for the state (Identity config)
-
-        # TODO: Alexandru
-        print("Reward", reward, "|C|", current_len, self.len_start, f"contrast{contrast} mexp{mexp}")
-        # print(self.current_circuit)
-        # input("Press any key...")
-
-        # circuit_as_string: str = circopt_utils.get_unique_representation(self.current_circuit)
-        # keep initial position of state in QTable
-        # if circuit_as_string not in g.state_map_identity.keys():
-        #     g.state_map_identity[circuit_as_string] = len(g.state_map_identity)
-        # g.state_counter[circuit_as_string] = g.state_counter.get(circuit_as_string, 0) + 1
-
-        # count every time a state is encountered
-        # observation: int = g.state_map_identity.get(circuit_as_string)
-
-        return 0, reward, self.done, {"current_len": current_len}
+        return observation, reward, self.done, extra
 
     def reset(self):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
         self._exhaust_optimization()
         self.previous_degree = self._get_circuit_degree()
-        g.current_moment = 0
+        self.previous_len = self._len_move_to_left()
+        self.previous_gate_count = self._get_gate_count()
         self.done = False
         self.could_apply_on, identity_int_string = circopt_utils.get_all_possible_identities(self.current_circuit)
-        # self.could_apply_on = [i for i in self.could_apply_on if i[1] >= g.current_moment]
-
         if identity_int_string not in g.state_map_identity.keys():
             g.state_map_identity[identity_int_string] = len(g.state_map_identity)
 

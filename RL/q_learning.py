@@ -41,25 +41,12 @@ class QAgent:
             print('Episode', e)
 
             for i in range(self.max_iter_episode):
-
-                action = 0
-                if np.random.uniform(0, 1) >= self.exploration_proba:
-                    # overwrite the action
+                if np.random.uniform(0, 1) <= self.exploration_proba:
+                    action = 'random'
+                else:
                     action = np.argmax(self.Q_table[current_state, :])
 
                 next_state, reward, done, extra = self.env.step(action)
-
-                # will be replaced with a future 'get_next_identity'
-                self.env.could_apply_on, identity_int_string = circopt_utils.get_all_possible_identities(
-                    self.env.current_circuit)
-                if len(self.env.could_apply_on) == 0:
-                    self.env.done = True
-                if identity_int_string not in g.state_map_identity.keys():
-                    g.state_map_identity[identity_int_string] = len(g.state_map_identity)
-                next_state = g.state_map_identity.get(identity_int_string)
-
-                action = g.get_random_action(self.env.could_apply_on)
-                # self.could_apply_on = [i for i in self.could_apply_on if i[1] >= g.current_moment]
 
                 # #Alexandru
                 # import quantify.utils.misc_utils as mu
@@ -67,6 +54,7 @@ class QAgent:
                 # print(len(mu.my_cache), mu.my_cache_hits)
 
                 current_len = extra["current_len"]
+                action = extra['action']
 
                 self.Q_table[current_state, action] = (1 - self.learning_rate) * self.Q_table[
                     current_state, action] + self.learning_rate * (
