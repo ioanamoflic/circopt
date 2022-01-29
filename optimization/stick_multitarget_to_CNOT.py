@@ -1,8 +1,9 @@
 import cirq
 import quantify.utils.misc_utils as mu
+from optimization.parallel_point_optimizer import ParallelPointOptimizer
 
 
-class StickMultiTargetToCNOT(cirq.PointOptimizer):
+class StickMultiTargetToCNOT(ParallelPointOptimizer):
     def __init__(self, optimize_till: int = None):
         super().__init__()
         self.optimize_till: int = optimize_till

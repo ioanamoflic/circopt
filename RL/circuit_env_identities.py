@@ -159,7 +159,7 @@ class CircuitEnvIdent(gym.Env):
         self._apply_identity(self.current_action[2], index=list_index)
         self._exhaust_optimization()
 
-        print('Optimized circuit: \n', self.current_circuit)
+        # print('Optimized circuit: \n', self.current_circuit)
 
         current_degree = self._get_circuit_degree()
         current_len: int = self._len_move_to_left()
@@ -198,7 +198,7 @@ class CircuitEnvIdent(gym.Env):
 
     def reset(self):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
-        self._exhaust_optimization()
+        # self._exhaust_optimization()
         self.previous_degree = self._get_circuit_degree()
         self.previous_len = self._len_move_to_left()
         self.previous_gate_count = self._get_gate_count()

@@ -67,27 +67,49 @@ def timing(f):
         ts = time()
         result = f(*args, **kw)
         te = time()
+
+        global _print_is_blocked
+        was_blocked = _print_is_blocked
+        if was_blocked:
+            enablePrint()
+
         print('func:%r args:[%r, %r] took: %2.4f sec' % \
           (f.__name__, args, kw, te-ts))
+
+        if was_blocked:
+            blockPrint()
+
         return result
     return wrap
 
-## Parallelisation in non-orthodox way ?
-from optimization.parallel_point_optimizer import ParallelPointOptimizer
-from cirq import PointOptimizer
-
+## Parallelisation
 def parallelise_optimizers():
-    parallel = ParallelPointOptimizer()
-    for optimizer in counting_optimizers:
-        optimizer.optimize_circuit = parallel.optimize_circuit
+    for optimizer in counting_optimizers.values():
+        optimizer.go_parallel = True
 
-    for optimizer in working_optimizers:
-        optimizer.optimize_circuit = parallel.optimize_circuit
+    for optimizer in working_optimizers.values():
+        optimizer.go_parallel = True
 
 def deparallelise_optimizers():
-    pointopt = PointOptimizer()
-    for optimizer in counting_optimizers:
-        optimizer.optimize_circuit = pointopt.optimize_circuit
+    for optimizer in counting_optimizers.values():
+        optimizer.go_parallel = False
 
-    for optimizer in working_optimizers:
-        optimizer.optimize_circuit = pointopt.optimize_circuit
+    for optimizer in working_optimizers.values():
+        optimizer.go_parallel = False
+
+
+# Verbosity
+# https://stackoverflow.com/questions/8391411/how-to-block-calls-to-print
+import sys, os
+_print_is_blocked = False
+# Disable
+def blockPrint():
+    global _print_is_blocked
+    _print_is_blocked = True
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    global _print_is_blocked
+    _print_is_blocked = False
+    sys.stdout = sys.__stdout__

@@ -5,25 +5,20 @@ from circuits.bernstein import bernstein_vazirani
 from circuits.ioana_random import *
 from circopt_utils import get_all_possible_identities
 
-import sys
+import global_stuff as globals
 
-import global_stuff as g
-
-def benchmark_parallelisation():
+def benchmark_single_parallelisation():
 
     print("compile...")
-    starting_circuit = get_random_circuit(nr_qubits=10, big_o_const=10)
+    # starting_circuit = get_random_circuit(nr_qubits=10, big_o_const=10)
+    starting_circuit = get_test_circuit()
 
-    from optimization.parallel_point_optimizer import ParallelPointOptimizer
-
-    paralel = ParallelPointOptimizer()
-
-    for i in range(2):
+    for i in range(0, 2):
         print(f"optimize...parallel={i}")
         from optimization.reverse_CNOT import ReverseCNOT
         my_opt = ReverseCNOT()
         if i == 1:
-            my_opt.optimize_circuit = paralel.optimize_circuit
+            my_opt.go_parallel = True
 
         from time import time
         ts = time()
@@ -35,14 +30,26 @@ def benchmark_parallelisation():
     return
 
 
-def run():
-    ep = 2000
-    run_identifier = sys.argv[1]
-    qubits = sys.argv[2]
-    constant = sys.argv[3]
+def benchmark_parallelisation():
 
-    random.seed(0)
+    print("compile...")
 
+    for i in range(1, 2):
+        globals.enablePrint()
+        print(f"optimize...parallel={i}")
+
+        if i == 0:
+            globals.deparallelise_optimizers()
+        elif i == 1:
+            globals.parallelise_optimizers()
+
+        # globals.blockPrint()
+        run(nr_episodes=2, run_identifier = 0, qubits = 5, constant = 1)
+
+    return
+
+@globals.timing
+def run(nr_episodes = 2000, run_identifier = 0, qubits = 5, constant = 1):
     qubit_trials = [int(qubits)]
     constant_trials = [int(constant)]
 
@@ -61,17 +68,21 @@ def run():
             conf: str = circ_dec.configurations.pop()
             decomposed_circuit = circ_dec.decompose_toffolis_in_circuit(conf)
 
-            g.state_map_identity = dict()
-            g.state_counter = dict()
-            g.action_map = dict()
+            globals.state_map_identity = dict()
+            globals.state_counter = dict()
+            globals.action_map = dict()
 
             env = CircuitEnvIdent(decomposed_circuit)
 
-            agent = QAgent(env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97)
+            agent = QAgent(env, n_ep=nr_episodes, max_iter=100, lr=0.01, gamma=0.97)
             agent.train(run_identifier, qbits)
-            filename = f'{run_identifier}_{qbits}_qb_random.csv'
-            agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)
+
+            # filename = f'{run_identifier}_{qbits}_qb_random.csv'
+            # agent.show_evolution(filename=filename, bvz_bits=qbits, ep=nr_episodes)
 
 
 if __name__ == '__main__':
-    run()
+    random.seed(0)
+    # run(run_identifier = sys.argv[1], qubits = sys.argv[2], constant = sys.argv[3])
+    # benchmark_single_parallelisation()
+    benchmark_parallelisation()

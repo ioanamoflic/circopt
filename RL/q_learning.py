@@ -36,6 +36,7 @@ class QAgent:
 
         for e in range(self.n_episodes):
             current_state: int = self.env.reset()
+
             current_len: int = 0
             total_episode_reward: float = 0.0
             print('Episode', e)

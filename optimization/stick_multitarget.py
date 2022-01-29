@@ -1,7 +1,8 @@
 import cirq
+from optimization.parallel_point_optimizer import ParallelPointOptimizer
 
 
-class StickMultiTarget(cirq.PointOptimizer):
+class StickMultiTarget(ParallelPointOptimizer):
     def __init__(self, optimize_till: int = None):
         super().__init__()
         self.optimize_till = optimize_till

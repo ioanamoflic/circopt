@@ -1,10 +1,12 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
+from optimization.parallel_point_optimizer import ParallelPointOptimizer
+
 import global_stuff as g
 import quantify.utils.misc_utils as mu
 
 
-class TopLeftHadamard(cirq.PointOptimizer):
+class TopLeftHadamard(ParallelPointOptimizer):
     def __init__(self, only_count=False):
         super().__init__()
         self.only_count = only_count
