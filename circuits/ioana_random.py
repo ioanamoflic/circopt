@@ -1,5 +1,8 @@
-import cirq
 import random
+
+import cirq
+from cirq import InsertStrategy
+
 
 def add_random_CNOT(circuit: cirq.Circuit, qubits):
     control = qubits[random.randint(0, len(qubits) - 1)]
@@ -30,5 +33,27 @@ def get_random_circuit(nr_qubits: int, big_o_const: int):
             circuit = add_random_CNOT(circuit, qubits)
         else:
             circuit = add_random_H(circuit, qubits)
+
+    return circuit
+
+
+def get_test_circuit():
+    circuit = cirq.Circuit()
+    q0, q1, q2, q3, q4 = [cirq.NamedQubit(str(i)) for i in range(5)]
+    circuit.append([cirq.CNOT.on(q4, q2)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q0)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q2)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q0)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q4)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q0)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.CNOT.on(q1, q0)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q4)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q4)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.CNOT.on(q2, q3)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q3)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q1)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.CNOT.on(q4, q0)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.H.on(q4)], strategy=InsertStrategy.NEW)
+    circuit.append([cirq.CNOT.on(q4, q0)], strategy=InsertStrategy.NEW)
 
     return circuit

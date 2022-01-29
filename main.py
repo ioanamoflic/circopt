@@ -1,7 +1,3 @@
-import random
-
-from cirq import InsertStrategy
-
 from RL.circuit_env_identities import CircuitEnvIdent
 from RL.q_learning import QAgent
 import routing.routing_multiple as rm
@@ -37,27 +33,6 @@ def benchmark_parallelisation():
         print(f"{te - ts}seconds")
 
     return
-
-def get_test_circuit():
-    circuit = cirq.Circuit()
-    q0, q1, q2, q3, q4 = [cirq.NamedQubit(str(i)) for i in range(5)]
-    circuit.append([cirq.CNOT.on(q4, q2)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q0)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q2)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q0)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q4)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q0)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.CNOT.on(q1, q0)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q4)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q4)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.CNOT.on(q2, q3)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q3)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q1)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.CNOT.on(q4, q0)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.H.on(q4)], strategy=InsertStrategy.NEW)
-    circuit.append([cirq.CNOT.on(q4, q0)], strategy=InsertStrategy.NEW)
-
-    return circuit
 
 
 def run():
