@@ -189,6 +189,9 @@ class CircuitEnvIdent(gym.Env):
         if identity_int_string not in g.state_map_identity.keys():
             g.state_map_identity[identity_int_string] = len(g.state_map_identity)
 
+        if len(self.could_apply_on) == 0:
+            self.done = True
+
         observation = g.state_map_identity.get(identity_int_string)
         self.previous_degree = current_degree
         self.previous_gate_count = current_gate_count

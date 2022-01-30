@@ -4,6 +4,7 @@ import multiprocessing
 
 NR_PROCS = 3
 
+
 class ParallelPointOptimizer(cirq.PointOptimizer):
 
     def optimize_circuit(self, circuit: cirq.Circuit):
@@ -15,7 +16,7 @@ class ParallelPointOptimizer(cirq.PointOptimizer):
         start = 0
         local_circ = [cirq.Circuit()] * NR_PROCS
         for i in range(NR_PROCS):
-            local_circ[i]._moments = circuit._moments[start : min(start + interval_len, len(circuit))]
+            local_circ[i]._moments = circuit._moments[start: min(start + interval_len, len(circuit))]
             p = multiprocessing.Process(target=super().optimize_circuit,
                                         args=[local_circ[i], ])
             processes.append(p)
