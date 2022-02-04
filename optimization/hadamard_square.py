@@ -8,10 +8,7 @@ import quantify.utils.misc_utils as mu
 
 class HadamardSquare(ParallelPointOptimizer):
     def __init__(self, only_count=False):
-        super().__init__()
-        self.only_count = only_count
-        self.count = 0
-        self.moment_index_qubit = []
+        super().__init__(only_count=only_count)
 
     def optimization_at(self, circuit, index, op):
 
@@ -54,8 +51,7 @@ class HadamardSquare(ParallelPointOptimizer):
                                         new_op = [cirq.CNOT.on(target, control)]
 
                                         if self.only_count:
-                                            self.count += 1
-                                            self.moment_index_qubit.append((CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT, index, qubit))
+                                            self.increase_opt_counter(CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT, index, qubit)
                                             return None
 
                                         return cirq.PointOptimizationSummary(

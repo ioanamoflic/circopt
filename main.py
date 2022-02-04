@@ -34,7 +34,7 @@ def benchmark_parallelisation():
 
     print("compile...")
 
-    for i in range(1, 2):
+    for i in range(0, 2):
         globals.enablePrint()
         print(f"optimize...parallel={i}")
 
@@ -43,13 +43,13 @@ def benchmark_parallelisation():
         elif i == 1:
             globals.parallelise_optimizers()
 
-        # globals.blockPrint()
-        run(nr_episodes=2, run_identifier = 0, qubits = 5, constant = 1)
+        globals.blockPrint()
+        run(nr_episodes=2, max_iter = 10, run_identifier = 0, qubits = 5, constant = 1)
 
     return
 
 @globals.timing
-def run(nr_episodes = 2000, run_identifier = 0, qubits = 5, constant = 1):
+def run(nr_episodes = 2000, max_iter = 100, run_identifier = 0, qubits = 5, constant = 1):
     qubit_trials = [int(qubits)]
     constant_trials = [int(constant)]
 
@@ -74,7 +74,7 @@ def run(nr_episodes = 2000, run_identifier = 0, qubits = 5, constant = 1):
 
             env = CircuitEnvIdent(decomposed_circuit)
 
-            agent = QAgent(env, n_ep=nr_episodes, max_iter=100, lr=0.01, gamma=0.97)
+            agent = QAgent(env, n_ep=nr_episodes, max_iter=max_iter, lr=0.01, gamma=0.97)
             agent.train(run_identifier, qbits)
 
             # filename = f'{run_identifier}_{qbits}_qb_random.csv'

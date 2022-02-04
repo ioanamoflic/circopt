@@ -8,10 +8,7 @@ import quantify.utils.misc_utils as mu
 
 class TopRightT(ParallelPointOptimizer):
     def __init__(self, only_count=False):
-        super().__init__()
-        self.only_count = only_count
-        self.count = 0
-        self.moment_index = []
+        super().__init__(only_count=only_count)
 
     def optimization_at(self, circuit, index, op):
 
@@ -34,8 +31,7 @@ class TopRightT(ParallelPointOptimizer):
                     new_op = [cirq.T.on(qubit), cirq.CNOT.on(control, target)]
 
                     if self.only_count:
-                        self.count += 1
-                        self.moment_index.append((CircuitIdentity.T_GATE_RIGHT, index))
+                        self.increase_opt_counter(CircuitIdentity.T_GATE_RIGHT, index, -1)
                         return None
 
                     return cirq.PointOptimizationSummary(

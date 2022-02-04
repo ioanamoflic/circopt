@@ -7,11 +7,8 @@ import quantify.utils.misc_utils as mu
 
 
 class OneHLeftTwoRight(ParallelPointOptimizer):
-    def __init__(self, where_to: int = 0, only_count=False):
-        super().__init__()
-        self.only_count = only_count
-        self.count = 0
-        self.moment_index_qubit = []
+    def __init__(self, only_count=False):
+        super().__init__(only_count=only_count)
 
     def optimization_at(self, circuit, index, op):
 
@@ -52,8 +49,7 @@ class OneHLeftTwoRight(ParallelPointOptimizer):
                                     new_op = [cirq.H.on(target), cirq.CNOT.on(target, control)]
 
                                     if self.only_count:
-                                        self.count += 1
-                                        self.moment_index_qubit.append((CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT, index, qubit))
+                                        self.increase_opt_counter(CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT, index, qubit)
                                         return None
 
                                     return cirq.PointOptimizationSummary(

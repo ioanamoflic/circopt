@@ -7,12 +7,8 @@ from optimization.parallel_point_optimizer import ParallelPointOptimizer
 
 class ReverseCNOT(ParallelPointOptimizer):
 
-    def __init__(self, only_count=False):
-        super().__init__()
-
-        self.only_count = only_count
-        self.count = 0
-        self.moment_index_qubit = []
+    def __init__(self, only_count = False):
+        super().__init__(only_count=only_count)
 
     def optimization_at(self, circuit, index, op):
 
@@ -26,8 +22,7 @@ class ReverseCNOT(ParallelPointOptimizer):
             new_op = [cirq.H.on(control), cirq.H.on(target), cirq.CNOT.on(target, control), cirq.H.on(control), cirq.H.on(target)]
 
             if self.only_count:
-                self.count += 1
-                self.moment_index_qubit.append((CircuitIdentity.REVERSED_CNOT, index, control))
+                self.increase_opt_counter(CircuitIdentity.REVERSED_CNOT, index, control)
                 return None
 
             return cirq.PointOptimizationSummary(

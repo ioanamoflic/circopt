@@ -186,6 +186,7 @@ class CircuitEnvIdent(gym.Env):
         # 3. ---------------- Store the new "observation" for the state (Identity config) ----------------
 
         self.could_apply_on, identity_int_string = circopt_utils.get_all_possible_identities(self.current_circuit)
+
         if identity_int_string not in g.state_map_identity.keys():
             g.state_map_identity[identity_int_string] = len(g.state_map_identity)
 
@@ -198,7 +199,8 @@ class CircuitEnvIdent(gym.Env):
 
     def reset(self):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
-        # self._exhaust_optimization()
+        self._exhaust_optimization()
+
         self.previous_degree = self._get_circuit_degree()
         self.previous_len = self._len_move_to_left()
         self.previous_gate_count = self._get_gate_count()

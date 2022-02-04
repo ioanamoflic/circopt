@@ -34,8 +34,9 @@ def get_all_possible_identities(circuit) -> Tuple[List[Tuple[CircuitIdentity, in
         all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
 
         # reset the optimizer
-        opt_circuit.count = 0
-        opt_circuit.moment_index_qubit.clear()
+        opt_circuit.clean_counters()
+
+    assert(len(all_possibilities) > 0)
 
     return sort_tuple_list(all_possibilities), identity_state
 

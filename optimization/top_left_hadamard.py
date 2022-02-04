@@ -8,10 +8,7 @@ import quantify.utils.misc_utils as mu
 
 class TopLeftHadamard(ParallelPointOptimizer):
     def __init__(self, only_count=False):
-        super().__init__()
-        self.only_count = only_count
-        self.count = 0
-        self.moment_index_qubit = []
+        super().__init__(only_count=only_count)
 
     def optimization_at(self, circuit, index, op):
         if index != g.random_moment and not self.only_count:
@@ -37,8 +34,7 @@ class TopLeftHadamard(ParallelPointOptimizer):
                         new_op = [cirq.H.on(control), cirq.CNOT.on(control, target), cirq.H.on(control), cirq.H.on(target)]
 
                         if self.only_count:
-                            self.count += 1
-                            self.moment_index_qubit.append((CircuitIdentity.ONE_HADAMARD_UP_LEFT, index, qubit))
+                            self.increase_opt_counter(CircuitIdentity.ONE_HADAMARD_UP_LEFT, index, qubit)
                             return None
 
                         return cirq.PointOptimizationSummary(
