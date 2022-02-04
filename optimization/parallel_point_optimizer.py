@@ -7,6 +7,7 @@ from optimization.optimize_circuits import CircuitIdentity
 
 NR_PROCS = 3
 
+
 class ParallelPointOptimizer(cirq.PointOptimizer):
 
     def __init__(self, only_count=False, parallel = False):
@@ -92,7 +93,7 @@ class ParallelPointOptimizer(cirq.PointOptimizer):
         local_circ = [cirq.Circuit()] * NR_PROCS
         pid_to_idx = {}
         for i in range(NR_PROCS):
-            
+
             local_circ[i]._moments = circuit._moments[start : min(start + interval_len, len(circuit._moments))]
             p = multiprocessing.Process(target=self.local_optimize_circuit,
                                         args=[local_circ[i], self.my_queue])
