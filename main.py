@@ -1,3 +1,5 @@
+import cirq
+
 from RL.circuit_env_identities import CircuitEnvIdent
 from RL.q_learning import QAgent
 import routing.routing_multiple as rm
@@ -36,45 +38,48 @@ def benchmark_parallelisation():
 
 
 def run():
-    ep = 2000
-    run_identifier = sys.argv[1]
-    qubits = sys.argv[2]
-    constant = sys.argv[3]
+    ep = 10
+    circuit_file = sys.argv[1]
+    # qubits = sys.argv[2]
+    # constant = sys.argv[3]
 
     random.seed(0)
 
-    qubit_trials = [int(qubits)]
-    constant_trials = [int(constant)]
+    # qubit_trials = [int(qubits)]
+    # constant_trials = [int(constant)]
 
     nr_qlearn_trials: int = 1
-    for start in range(len(constant_trials)):
-        qbits = qubit_trials[start:start+1][0]
-        added_depth = constant_trials[start:start+1][0]
-        # starting_circuit = get_random_circuit(qbits, added_depth)
-        starting_circuit = get_test_circuit()
-        # f = open('CR_0.txt', 'r')
-        # json_string = f.read()
-        # starting_circuit = cirq.read_json(json_text=json_string)
+    # for start in range(len(constant_trials)):
+    #     qbits = qubit_trials[start:start+1][0]
+    #     added_depth = constant_trials[start:start+1][0]
+    #     # starting_circuit = get_random_circuit(qbits, added_depth)
+    #     starting_circuit = get_test_circuit()
+    f = open(circuit_file, 'r')
+    json_string = f.read()
+    starting_circuit = cirq.read_json(json_text=json_string)
+    qbits = len(cirq.Circuit(starting_circuit).all_qubits())
 
-        print("Starting circuit: \n", starting_circuit)
+    circuit_name = circuit_file.split('.txt')[0]
 
-        circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10, nr_bits=qbits)
-        circ_dec.get_random_decomposition_configuration()
+    print("Starting circuit: \n", starting_circuit)
 
-        for i in range(nr_qlearn_trials):
-            conf: str = circ_dec.configurations.pop()
-            decomposed_circuit = circ_dec.decompose_toffolis_in_circuit(conf)
+    circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10)
+    circ_dec.get_random_decomposition_configuration()
 
-            g.state_map_identity = dict()
-            g.state_counter = dict()
-            g.action_map = dict()
+    for i in range(nr_qlearn_trials):
+        conf: str = circ_dec.configurations.pop()
+        decomposed_circuit = circ_dec.decompose_toffolis_in_circuit(conf)
 
-            env = CircuitEnvIdent(decomposed_circuit)
+        g.state_map_identity = dict()
+        g.state_counter = dict()
+        g.action_map = dict()
 
-            agent = QAgent(env, n_ep=ep, max_iter=50, lr=0.01, gamma=0.97)
-            agent.train(run_identifier, qbits)
-            filename = f'{run_identifier}_{qbits}_qb_random.csv'
-            agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)
+        env = CircuitEnvIdent(decomposed_circuit)
+
+        agent = QAgent(env, n_ep=ep, max_iter=50, lr=0.01, gamma=0.97)
+        agent.train(circuit_name)
+        filename = f'{circuit_name}.csv'
+        agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)
 
 
 if __name__ == '__main__':
