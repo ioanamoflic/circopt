@@ -74,22 +74,12 @@ def get_unique_representation(circuit) -> str:
     return str_repr
 
 
-def plot_reward(x_axis: np.ndarray, y_axis: np.ndarray, xlabel: str, ylabel: str) -> None:
+def plot(x_axis: np.ndarray, y_axis: np.ndarray, xlabel: str, ylabel: str, filename: str) -> None:
     fig1, ax1 = plt.subplots()
     plt.style.use('seaborn')
     lines, = ax1.plot(x_axis, y_axis)
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
-    fig1.savefig('rewards.png', dpi=300)
+    fig1.savefig(filename, dpi=300)
     plt.close(fig1)
 
-
-def plot_len(x_axis: np.ndarray, y_axis: np.ndarray, xlabel: str, ylabel: str) -> None:
-    fig1, ax1 = plt.subplots()
-    plt.style.use('seaborn')
-    lines, = ax1.plot(x_axis, y_axis)
-    ax1.set_xlabel(xlabel)
-    ax1.set_ylabel(ylabel)
-    fig1.savefig('circuit_length.png', dpi=300)
-
-    plt.close(fig1)

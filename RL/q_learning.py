@@ -13,7 +13,7 @@ class QAgent:
             Class used to train Q-learning agent on circuit optimization.
        """
 
-    def __init__(self, env, n_ep=20000, max_iter=100, exploration_proba=1, expl_decay=0.001, min_expl_proba=0.01,
+    def __init__(self, env, n_ep=20000, max_iter=100, exploration_proba=1, expl_decay=0.002, min_expl_proba=0.01,
                  gamma=0.99, lr=0.1):
         self.env: CircuitEnvIdent = env
         self.n_episodes: int = n_ep
@@ -25,6 +25,7 @@ class QAgent:
         self.learning_rate: float = lr
         self.rewards_per_episode = list()
         self.final_len_per_episode = list()
+        self.final_gc_per_episode = list()
         self.Q_table: np.ndarray = np.zeros(shape=(2, 2))
 
     def train(self, run_identifier: str, bits: int) -> None:
@@ -37,6 +38,7 @@ class QAgent:
         for e in range(self.n_episodes):
             current_state: int = self.env.reset()
             current_len: int = 0
+            current_gate_count: int = 0
             total_episode_reward: float = 0.0
             print('Episode', e)
 
@@ -55,6 +57,7 @@ class QAgent:
 
                 current_len = extra["current_len"]
                 action = extra['action']
+                current_gate_count = extra['current_gate_count']
 
                 self.Q_table[current_state, action] = (1 - self.learning_rate) * self.Q_table[
                     current_state, action] + self.learning_rate * (
@@ -75,6 +78,7 @@ class QAgent:
 
             self.exploration_proba = max(self.min_exploration_proba, np.exp(-self.exploration_decreasing_decay * e))
             self.rewards_per_episode.append(total_episode_reward)
+            self.final_gc_per_episode.append(current_gate_count)
             self.final_len_per_episode.append(current_len)
 
             # save QTable state
@@ -94,15 +98,16 @@ class QAgent:
         all_episodes: np.ndarray = np.arange(1, ep + 1)
         mean_rewards: np.ndarray = np.array([])
         mean_lengths: np.ndarray = np.array([])
+        mean_gate_count: np.ndarray = np.array([])
 
-        header = ['nr_qbits', 'episode', 'reward', 'final_length', 'gamma', 'learning_rate', 'expl_decay']
+        header = ['nr_qbits', 'episode', 'reward', 'final_length', 'final_gate_count', 'gamma', 'learning_rate', 'expl_decay']
         csv_lines = []
 
         with open(filename, 'w', encoding='UTF8', newline='\n') as f:
             writer = csv.writer(f)
             writer.writerow(header)
             for e in range(len(all_episodes)):
-                csv_lines.append([bvz_bits, e, self.rewards_per_episode[e], self.final_len_per_episode[e],
+                csv_lines.append([bvz_bits, e, self.rewards_per_episode[e], self.final_len_per_episode[e], self.final_gc_per_episode[e],
                                   self.discount_factor, self.learning_rate, self.exploration_decreasing_decay]),
             writer.writerows(csv_lines)
 
@@ -110,11 +115,15 @@ class QAgent:
         for i in range(ep // 10):
             mean_rewards = np.append(mean_rewards, np.mean(self.rewards_per_episode[i * 10:(i + 1) * 10]))
             mean_lengths = np.append(mean_lengths, np.mean(self.final_len_per_episode[i * 10:(i + 1) * 10]))
+            mean_gate_count = np.append(mean_gate_count, np.mean(self.final_gc_per_episode[i * 10:(i + 1) * 10]))
             print((i + 1) * 10, ": Mean episode reward: ", np.mean(self.rewards_per_episode[i * 10:(i + 1) * 10]))
         print("\n\n")
 
-        circopt_utils.plot_reward(episodes, mean_rewards, "Episodes", "Mean rewards, lr=" + str(self.learning_rate) +
-                                  " gamma=" + str(self.discount_factor))
-        circopt_utils.plot_len(episodes, mean_lengths, "Episodes",
-                               "Mean circuit length, lr=" + str(self.learning_rate) +
-                               " gamma=" + str(self.discount_factor))
+        circopt_utils.plot(episodes, mean_rewards, "Episodes", "Mean rewards, lr=" + str(self.learning_rate) +
+                           " gamma=" + str(self.discount_factor), filename='rewards.png')
+        circopt_utils.plot(episodes, mean_lengths, "Episodes",
+                           "Mean circuit length, lr=" + str(self.learning_rate) +
+                           " gamma=" + str(self.discount_factor), filename='circuit_length.png')
+        circopt_utils.plot(episodes, mean_gate_count, "Episodes",
+                           "Mean gate count, lr=" + str(self.learning_rate) +
+                           " gamma=" + str(self.discount_factor), filename='gate_count.png')

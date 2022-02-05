@@ -52,6 +52,10 @@ def run():
         added_depth = constant_trials[start:start+1][0]
         # starting_circuit = get_random_circuit(qbits, added_depth)
         starting_circuit = get_test_circuit()
+        # f = open('CR_0.txt', 'r')
+        # json_string = f.read()
+        # starting_circuit = cirq.read_json(json_text=json_string)
+
         print("Starting circuit: \n", starting_circuit)
 
         circ_dec = rm.RoutingMultiple(starting_circuit, no_decomp_sets=10, nr_bits=qbits)
@@ -67,7 +71,7 @@ def run():
 
             env = CircuitEnvIdent(decomposed_circuit)
 
-            agent = QAgent(env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97)
+            agent = QAgent(env, n_ep=ep, max_iter=50, lr=0.01, gamma=0.97)
             agent.train(run_identifier, qbits)
             filename = f'{run_identifier}_{qbits}_qb_random.csv'
             agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)

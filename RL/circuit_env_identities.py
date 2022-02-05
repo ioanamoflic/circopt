@@ -23,6 +23,9 @@ class CircuitEnvIdent(gym.Env):
     """
     metadata = {'render.modes': ['human']}
     NO_ACTIONS = 2
+    CNOT_WEIGHT = 1.0
+    MULTITARGET_WEIGHT = 10.0
+    H_WEIGHT = 0.1
 
     def __init__(self, starting_circuit: cirq.Circuit):
         super(CircuitEnvIdent, self).__init__()
@@ -33,9 +36,14 @@ class CircuitEnvIdent(gym.Env):
         self.len_start: int = self._len_move_to_left()
         self.could_apply_on: List[Tuple[int, int]] = list()
 
-        self.previous_degree = self._get_circuit_degree()
-        self.previous_gate_count: int = self._get_gate_count()
-        self.previous_len: float = self._len_move_to_left()
+        # self.previous_degree = self._get_circuit_degree()
+        # self.previous_gate_count: int = self._get_gate_count()
+        # self.previous_len: float = self._len_move_to_left()
+
+        self.max_len = 0
+        self.max_gate_count = 0
+        self.max_degree = 0
+        self.max_weight_av = 0
 
         # optimizers
         self.cancel_cnots = cnc.CancelNghCNOTs()
@@ -45,10 +53,33 @@ class CircuitEnvIdent(gym.Env):
         self.stick_multitarget = StickMultiTarget()
         self.stick_to_cnot = StickMultiTargetToCNOT()
 
+    def _get_weighted_av(self) -> float:
+        div_by = self.CNOT_WEIGHT + self.MULTITARGET_WEIGHT + self.H_WEIGHT
+        cnots: int = 0
+        hs: int = 0
+        multitargets: int = 0
+        for moment in self.current_circuit:
+            for op in moment:
+                if len(op.qubits) > 2:
+                    multitargets += 1
+                elif len(op.qubits) == 2:
+                    cnots += 1
+                elif len(op.qubits) == 1:
+                    hs += 1
+        return (multitargets * self.MULTITARGET_WEIGHT + cnots * self.CNOT_WEIGHT + hs * self.H_WEIGHT) / div_by
+
     def _get_gate_count(self) -> int:
         counter: int = 0
         for moment in self.current_circuit:
             counter += len(moment)
+        return counter
+
+    def _get_cnot_gate_count(self) -> int:
+        counter: int = 0
+        for moment in self.current_circuit:
+            for op in moment:
+                if len(op.qubits) >= 2:
+                    counter += 1
         return counter
 
     def _get_random_action(self) -> Tuple[Tuple[int, Any, int], int]:
@@ -100,7 +131,6 @@ class CircuitEnvIdent(gym.Env):
             self.drop_empty.optimize_circuit(self.current_circuit)
         except Exception as arg:
             logging.error(f'Error while applying optimization : {arg}')
-
         return add_to_reward
 
     def _get_circuit_degree(self) -> np.ndarray:
@@ -164,24 +194,26 @@ class CircuitEnvIdent(gym.Env):
         current_degree = self._get_circuit_degree()
         current_len: int = self._len_move_to_left()
         current_gate_count: int = self._get_gate_count()
+        current_weight_av = self._get_weighted_av()
 
         extra = dict()
         extra["current_len"] = current_len
+        extra['current_gate_count'] = current_gate_count
         extra["action"] = g.state_map_identity.get(self.current_action)
 
         # 2. ---------------- Calculate the "reward" for the new state of the circuit ----------------
 
-        mexp = max(0.0, self.previous_len - current_len)
-        contrast = (self.previous_gate_count - current_gate_count) / (self.previous_gate_count + current_gate_count)
-        contrast += 2
-        reward = pow(contrast, 1 + mexp)
-        print(f'Reward: {reward}'
-              f' contrast: {contrast}'
-              f' mexp: {mexp} '
-              f' current_len: {current_len}'
-              f' prev_len: {self.previous_len}'
-              f' current_gate_count: {current_gate_count} '
-              f' prev_gate_count: {self.previous_gate_count}')
+        # mexp = max(0.0, self.previous_len - current_len)
+        # contrast = (self.previous_gate_count - current_gate_count) / (self.previous_gate_count + current_gate_count)
+        # contrast += 2
+        # reward = pow(contrast, 1 + mexp)
+        if self.max_weight_av - current_weight_av > 0:
+            reward = pow(self.max_weight_av - current_weight_av,
+                         1 + self.max_degree / current_degree + self.max_len / current_len)
+        else:
+            reward = pow(current_weight_av, 1 + self.max_degree / current_degree + self.max_len / current_len)
+
+        print(f'Reward: {reward}')
 
         # 3. ---------------- Store the new "observation" for the state (Identity config) ----------------
 
@@ -193,18 +225,22 @@ class CircuitEnvIdent(gym.Env):
             self.done = True
 
         observation = g.state_map_identity.get(identity_int_string)
-        self.previous_degree = current_degree
-        self.previous_gate_count = current_gate_count
-        self.previous_len = current_len
+        # self.previous_degree = current_degree
+        # self.previous_gate_count = current_gate_count
+        # self.previous_len = current_len
+
+        self.max_len = max(self.max_len, current_len)
+        self.max_gate_count = max(self.max_gate_count, current_gate_count)
+        self.max_degree = max(self.max_degree, current_degree)
 
         return observation, reward, self.done, extra
 
     def reset(self):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
         self._exhaust_optimization()
-        self.previous_degree = self._get_circuit_degree()
-        self.previous_len = self._len_move_to_left()
-        self.previous_gate_count = self._get_gate_count()
+        # self.previous_degree = self._get_circuit_degree()
+        # self.previous_len = self._len_move_to_left()
+        # self.previous_gate_count = self._get_gate_count()
         self.done = False
         self.could_apply_on, identity_int_string = circopt_utils.get_all_possible_identities(self.current_circuit)
         if identity_int_string not in g.state_map_identity.keys():
