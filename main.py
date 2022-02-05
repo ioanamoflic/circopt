@@ -38,7 +38,7 @@ def benchmark_parallelisation():
 
 
 def run():
-    ep = 10
+    ep = 3000
     circuit_file = sys.argv[1]
     # qubits = sys.argv[2]
     # constant = sys.argv[3]
@@ -57,6 +57,7 @@ def run():
     f = open(circuit_file, 'r')
     json_string = f.read()
     starting_circuit = cirq.read_json(json_text=json_string)
+    # starting_circuit = get_test_circuit()
     qbits = len(cirq.Circuit(starting_circuit).all_qubits())
 
     circuit_name = circuit_file.split('.txt')[0]
@@ -76,7 +77,7 @@ def run():
 
         env = CircuitEnvIdent(decomposed_circuit)
 
-        agent = QAgent(env, n_ep=ep, max_iter=50, lr=0.01, gamma=0.97)
+        agent = QAgent(env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97)
         agent.train(circuit_name)
         filename = f'{circuit_name}.csv'
         agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)

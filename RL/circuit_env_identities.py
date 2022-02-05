@@ -1,3 +1,4 @@
+import math
 from typing import Tuple, List, Union, Any
 import numpy as np
 import gym
@@ -23,9 +24,9 @@ class CircuitEnvIdent(gym.Env):
     """
     metadata = {'render.modes': ['human']}
     NO_ACTIONS = 2
-    CNOT_WEIGHT = 1.0
-    MULTITARGET_WEIGHT = 10.0
-    H_WEIGHT = 0.1
+    CNOT_WEIGHT = 5.0
+    # MULTITARGET_WEIGHT = 3.0
+    H_WEIGHT = 0.5
 
     def __init__(self, starting_circuit: cirq.Circuit):
         super(CircuitEnvIdent, self).__init__()
@@ -44,6 +45,7 @@ class CircuitEnvIdent(gym.Env):
         self.max_gate_count = 0
         self.max_degree = 0
         self.max_weight_av = 0
+        self.min_weight_av = math.inf
 
         # optimizers
         self.cancel_cnots = cnc.CancelNghCNOTs()
@@ -54,19 +56,16 @@ class CircuitEnvIdent(gym.Env):
         self.stick_to_cnot = StickMultiTargetToCNOT()
 
     def _get_weighted_av(self) -> float:
-        div_by = self.CNOT_WEIGHT + self.MULTITARGET_WEIGHT + self.H_WEIGHT
+        div_by = self.CNOT_WEIGHT + self.H_WEIGHT
         cnots: int = 0
         hs: int = 0
-        multitargets: int = 0
         for moment in self.current_circuit:
             for op in moment:
-                if len(op.qubits) > 2:
-                    multitargets += 1
-                elif len(op.qubits) == 2:
+                if len(op.qubits) >= 2:
                     cnots += 1
                 elif len(op.qubits) == 1:
                     hs += 1
-        return (multitargets * self.MULTITARGET_WEIGHT + cnots * self.CNOT_WEIGHT + hs * self.H_WEIGHT) / div_by
+        return (cnots * self.CNOT_WEIGHT + hs * self.H_WEIGHT) / div_by
 
     def _get_gate_count(self) -> int:
         counter: int = 0
@@ -207,8 +206,8 @@ class CircuitEnvIdent(gym.Env):
         # contrast = (self.previous_gate_count - current_gate_count) / (self.previous_gate_count + current_gate_count)
         # contrast += 2
         # reward = pow(contrast, 1 + mexp)
-        if self.max_weight_av - current_weight_av > 0:
-            reward = pow(self.max_weight_av - current_weight_av,
+        if current_weight_av - self.min_weight_av > 0:
+            reward = pow(current_weight_av - self.min_weight_av,
                          1 + self.max_degree / current_degree + self.max_len / current_len)
         else:
             reward = pow(current_weight_av, 1 + self.max_degree / current_degree + self.max_len / current_len)
@@ -232,6 +231,8 @@ class CircuitEnvIdent(gym.Env):
         self.max_len = max(self.max_len, current_len)
         self.max_gate_count = max(self.max_gate_count, current_gate_count)
         self.max_degree = max(self.max_degree, current_degree)
+        self.max_weight_av = max(self.max_weight_av, current_weight_av)
+        self.min_weight_av = min(self.min_weight_av, current_weight_av)
 
         return observation, reward, self.done, extra
 
