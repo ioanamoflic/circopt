@@ -11,8 +11,8 @@ import sys
 
 import global_stuff as g
 
-def benchmark_parallelisation():
 
+def benchmark_parallelisation():
     print("compile...")
     starting_circuit = get_random_circuit(nr_qubits=10, big_o_const=10)
 
@@ -60,7 +60,8 @@ def run():
     # starting_circuit = get_test_circuit()
     qbits = len(cirq.Circuit(starting_circuit).all_qubits())
 
-    circuit_name = circuit_file.split('.txt')[0]
+    circuit_file = circuit_file.split('.txt')[0]
+    circuit_name = circuit_file.split('train_circuits/')[1]
 
     print("Starting circuit: \n", starting_circuit)
 
@@ -77,9 +78,9 @@ def run():
 
         env = CircuitEnvIdent(decomposed_circuit)
 
-        agent = QAgent(env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97)
+        agent = QAgent(env, n_ep=ep, max_iter=200, lr=0.01, gamma=0.97)
         agent.train(circuit_name)
-        filename = f'{circuit_name}.csv'
+        filename = f'{circuit_file}.csv'
         agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)
 
 

@@ -1,14 +1,20 @@
-import random
+import json
+from numpy import ndarray
 
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict, Any
 
 import cirq
 import pandas as pd
 import global_stuff as g
 import numpy as np
 import matplotlib.pyplot as plt
+from routing.routing_utils import plot_results
+from ast import literal_eval
 
 from optimization.optimize_circuits import CircuitIdentity
+
+
+#  -------------------------------------------------- TRAIN UTILS --------------------------------------------------
 
 
 def get_action_by_value(value: int) -> Union[Tuple[int, int, int], None]:
@@ -46,6 +52,13 @@ def to_str(config: List[int]) -> str:
     return current_config_as_string
 
 
+def get_unique_representation(circuit) -> str:
+    n_circuit = cirq.Circuit(circuit, strategy=cirq.InsertStrategy.EARLIEST)
+    str_repr = str(n_circuit)
+    # TODO: Alexandru maybe sha-1?
+    return str_repr
+
+
 def moment_has_toffoli(moment: cirq.Moment) -> bool:
     for op in moment.operations:
         if op.gate == cirq.TOFFOLI:
@@ -53,25 +66,16 @@ def moment_has_toffoli(moment: cirq.Moment) -> bool:
     return False
 
 
+#  -------------------------------------------------- PLOT UTILS --------------------------------------------------
+
+
 def get_data(bits: int) -> None:
-    """
-    Selects data used for Q-learning simulation and updates arrays from config file.
-    :param bits: parameter user for choosing which adder circuit to train on
-    :return: None
-    """
-    df: pd.DataFrame = pd.read_csv("data_letters.csv")
+    df: pd.DataFrame = pd.read_csv("routing_data/data_letters.csv")
     g.all_configs = df.loc[df['nrbits'] == bits]['toffoli_desc_conf'].values
     g.input_depths = df.loc[df['nrbits'] == bits]['depth_input'].values
     g.output_depths = df.loc[df['nrbits'] == bits]['depth_output'].values
     g.ratios = g.input_depths / g.output_depths
     g.times = df.loc[df['nrbits'] == bits]['process_time'].values
-
-
-def get_unique_representation(circuit) -> str:
-    n_circuit = cirq.Circuit(circuit, strategy=cirq.InsertStrategy.EARLIEST)
-    str_repr = str(n_circuit)
-    # TODO: Alexandru maybe sha-1?
-    return str_repr
 
 
 def plot(x_axis: np.ndarray, y_axis: np.ndarray, xlabel: str, ylabel: str, filename: str) -> None:
@@ -83,3 +87,128 @@ def plot(x_axis: np.ndarray, y_axis: np.ndarray, xlabel: str, ylabel: str, filen
     fig1.savefig(filename, dpi=300)
     plt.close(fig1)
 
+
+def plot_dataset():
+    df: pd.DataFrame = pd.read_csv("routing_data/data_letters.csv")
+    # output = (data['depth_output'].values[1:]).astype(float)
+    # input = (data['depth_input'].values[1:]).astype(float)
+
+    pd.columns = ['nrbits', 'toffoli_desc_conf', 'nr_qubits_output', 'depth_input', 'depth_output', 'process_time']
+
+    grouped_df = df.groupby(["nrbits"])
+    grouped_outputs = grouped_df['depth_output'].apply(list)
+    grouped_lists = grouped_outputs.reset_index()
+    outputs_av = np.mean(grouped_lists['depth_output'].tolist(), axis=1)
+
+    grouped_df = df.groupby(["nrbits"])
+    grouped_outputs = grouped_df['depth_input'].apply(list)
+    grouped_lists = grouped_outputs.reset_index()
+    inputs_av = np.mean(grouped_lists['depth_input'].tolist(), axis=1)
+
+    grouped_df = df.groupby(["nrbits"])
+    grouped_outputs = grouped_df['process_time'].apply(list)
+    grouped_lists = grouped_outputs.reset_index()
+    times_av = np.mean(grouped_lists['process_time'].tolist(), axis=1)
+
+    depth_ratios = outputs_av / inputs_av
+
+    print(times_av)
+    print(depth_ratios)
+    plot_results(times_av, depth_ratios, no_qubits=11, offset=4)
+
+
+#  -------------------------------------------------- TEST UTILS --------------------------------------------------
+
+
+def merge(q_table_1: np.ndarray, q_table_2: np.ndarray, state_map_1: dict, state_map_2: dict, action_map_1: dict,
+          action_map_2: dict) -> Tuple[Union[ndarray, ndarray], Dict[Any, int], Dict[Any, int]]:
+    merged_actions = set(list(action_map_1.keys()) + list(action_map_2.keys()))
+    merged_states = set(list(state_map_1.keys()) + list(state_map_2.keys()))
+
+    merged_qt: np.ndarray = np.zeros((len(merged_states), len(merged_actions)))
+    merged_action_map = dict()
+    merged_state_map = dict()
+
+    for action in merged_actions:
+        merged_action_map[action] = len(merged_action_map)
+
+    for state in merged_states:
+        merged_state_map[state] = len(merged_state_map)
+
+    for state in merged_states:
+        if state in state_map_1.keys() and state in state_map_2.keys():
+            q_table_1_line_index = state_map_1[state]
+            q_table_2_line_index = state_map_2[state]
+
+            for action in merged_actions:
+                if action in action_map_1.keys() and action in action_map_2.keys():
+                    q_table_1_col_index = action_map_1[action]
+                    q_table_2_col_index = action_map_2[action]
+                    merged_qt[merged_state_map[state], merged_action_map[action]] = (q_table_1[
+                                                                       q_table_1_line_index, q_table_1_col_index] +
+                                                                   q_table_2[
+                                                                       q_table_2_line_index, q_table_2_col_index]) / 2.0
+
+                elif action in action_map_1.keys() and action not in action_map_2.keys():
+                    q_table_1_col_index = action_map_1[action]
+                    merged_qt[merged_state_map[state], merged_action_map[action]] = q_table_1[q_table_1_line_index, q_table_1_col_index]
+
+                elif action in action_map_2.keys() and action not in action_map_1.keys():
+                    q_table_2_col_index = action_map_2[action]
+                    merged_qt[merged_state_map[state], merged_action_map[action]] = q_table_2[q_table_2_line_index, q_table_2_col_index]
+
+        elif state in state_map_1.keys() and state not in state_map_2.keys():
+            q_table_1_line_index = state_map_1[state]
+
+            for action in merged_actions:
+                if action in action_map_1.keys():
+                    q_table_1_col_index = action_map_1[action]
+                    merged_qt[merged_state_map[state], merged_action_map[action]] = q_table_1[q_table_1_line_index, q_table_1_col_index]
+
+        elif state in state_map_2.keys() and state not in state_map_1.keys():
+            q_table_2_line_index = state_map_2[state]
+
+            for action in merged_actions:
+                if action in action_map_2.keys():
+                    q_table_2_col_index = action_map_2[action]
+                    merged_qt[merged_state_map[state], merged_action_map[action]] = q_table_2[q_table_2_line_index, q_table_2_col_index]
+
+    return merged_qt, merged_state_map, merged_action_map
+
+
+def read_and_merge_all(q_tables: List[str], state_maps: List[str], action_maps: List[str]):
+    assert len(q_tables) == len(state_maps) == len(action_maps)
+
+    final_q_table, final_state_map, final_action_map = read_train_data(q_tables[0], action_maps[0], state_maps[0])
+
+    for i in range(1, len(q_tables)):
+        current_q_table, current_state_map, current_action_map = read_train_data(q_tables[i], action_maps[i],
+                                                                                 state_maps[i])
+
+        final_q_table, final_state_map, final_action_map = merge(final_q_table, current_q_table, final_state_map,
+                                                                 current_state_map, final_action_map,
+                                                                 current_action_map)
+
+    return final_q_table, final_state_map, final_action_map
+
+
+def read_train_data(q_table_file: str, action_map_file: str, state_map_file: str):
+    q_table = np.load(q_table_file)
+    file1 = open(state_map_file, 'r')
+    file2 = open(action_map_file, 'r')
+    state_map = json.load(file1)
+    action_map_json = json.load(file2)
+    action_map = {literal_eval(k): v for k, v in action_map_json.items()}
+
+    print(type(state_map))
+    print(type(action_map))
+
+    return q_table, state_map, action_map
+
+
+def write_train_data(identifier: str, q_table):
+    np.save(f'train_data/{identifier}_QTable.npy', q_table)
+    with open(f'train_data/{identifier}_State_Map.txt', 'w') as f1:
+        json.dump(g.state_map_identity, f1)
+    with open(f'train_data/{identifier}_Action_Map.txt', 'w') as f2:
+        json.dump({str((k[0].value, k[1].name, k[2])): v for k, v in g.action_map.items()}, f2)

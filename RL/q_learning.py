@@ -82,11 +82,7 @@ class QAgent:
             self.final_len_per_episode.append(current_len)
 
             # save QTable state
-            np.save(f'{run_identifier}_QTable.npy', self.Q_table)
-            with open(f'{run_identifier}_State_Map.txt', 'w') as f1:
-                json.dump(g.state_map_identity, f1)
-            with open(f'{run_identifier}_Action_Map.txt', 'w') as f2:
-                json.dump(str(g.action_map), f2)
+            circopt_utils.write_train_data(run_identifier, self.Q_table)
 
     def show_evolution(self, filename: str = '3bits.csv', bvz_bits: int = 3, ep: int = 8000) -> None:
         """

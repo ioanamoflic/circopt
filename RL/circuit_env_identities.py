@@ -45,7 +45,7 @@ class CircuitEnvIdent(gym.Env):
         self.max_gate_count = 0
         self.max_degree = 0
         self.max_weight_av = 0
-        self.min_weight_av = math.inf
+        self.min_weight_av = self._get_weighted_av()
 
         # optimizers
         self.cancel_cnots = cnc.CancelNghCNOTs()
@@ -207,7 +207,7 @@ class CircuitEnvIdent(gym.Env):
         # contrast += 2
         # reward = pow(contrast, 1 + mexp)
         if current_weight_av - self.min_weight_av > 0:
-            reward = pow(current_weight_av - self.min_weight_av,
+            reward = pow(self.min_weight_av / current_weight_av,
                          1 + self.max_degree / current_degree + self.max_len / current_len)
         else:
             reward = pow(current_weight_av, 1 + self.max_degree / current_degree + self.max_len / current_len)
