@@ -1,46 +1,9 @@
 import circopt_utils
 import circopt_utils as utils
-import cirq
 import numpy as np
 import global_stuff as globals
 from optimization.optimize_circuits import CircuitIdentity
 from circuits.ioana_random import *
-from optimization.stick_multitarget_to_CNOT import StickMultiTargetToCNOT
-from optimization.stick_CNOTs import StickCNOTs
-from optimization.stick_multitarget import StickMultiTarget
-import quantify.optimizers as cnc
-
-cancel_cnots = cnc.CancelNghCNOTs()
-drop_empty = cirq.optimizers.DropEmptyMoments()
-stick_cnots = StickCNOTs()
-cancel_hadamards = cnc.CancelNghHadamards()
-stick_multitarget = StickMultiTarget()
-stick_to_cnot = StickMultiTargetToCNOT()
-
-
-def _optimize(circuit):
-    cancel_cnots.optimize_circuit(circuit)
-    drop_empty.optimize_circuit(circuit)
-    stick_cnots.optimize_circuit(circuit)
-    cancel_hadamards.optimize_circuit(circuit)
-    stick_multitarget.optimize_circuit(circuit)
-    drop_empty.optimize_circuit(circuit)
-    stick_to_cnot.optimize_circuit(circuit)
-    drop_empty.optimize_circuit(circuit)
-
-    return circuit
-
-
-def exhaust_optimization(circuit):
-    prev_circ_repr: str = ""
-    curr_circ_repr: str = circopt_utils.get_unique_representation(circuit)
-
-    while prev_circ_repr != curr_circ_repr:
-        prev_circ_repr = curr_circ_repr
-        circuit = _optimize(circuit)
-        curr_circ_repr = circopt_utils.get_unique_representation(circuit)
-
-    return circuit
 
 
 def optimize(test_circuit, Q_Table, state_map, action_map, steps=1):
@@ -79,7 +42,7 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps=1):
         elif apply_on[index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
             globals.working_optimizers["hadamardsquare"].optimize_circuit(test_circuit)
 
-        test_circuit = exhaust_optimization(test_circuit)
+        test_circuit = circopt_utils.exhaust_optimization(test_circuit)
 
     return test_circuit
 

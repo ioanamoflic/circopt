@@ -10,9 +10,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from routing.routing_utils import plot_results
 from ast import literal_eval
+import quantify.optimizers as cnc
 
+from optimization.stick_CNOTs import StickCNOTs
+from optimization.stick_multitarget import StickMultiTarget
+from optimization.stick_multitarget_to_CNOT import StickMultiTargetToCNOT
 from optimization.optimize_circuits import CircuitIdentity
 
+
+cancel_cnots = cnc.CancelNghCNOTs()
+drop_empty = cirq.optimizers.DropEmptyMoments()
+stick_cnots = StickCNOTs()
+cancel_hadamards = cnc.CancelNghHadamards()
+stick_multitarget = StickMultiTarget()
+stick_to_cnot = StickMultiTargetToCNOT()
 
 #  -------------------------------------------------- TRAIN UTILS --------------------------------------------------
 
@@ -64,6 +75,31 @@ def moment_has_toffoli(moment: cirq.Moment) -> bool:
         if op.gate == cirq.TOFFOLI:
             return True
     return False
+
+
+def optimize(circuit):
+    cancel_cnots.optimize_circuit(circuit)
+    drop_empty.optimize_circuit(circuit)
+    stick_cnots.optimize_circuit(circuit)
+    cancel_hadamards.optimize_circuit(circuit)
+    stick_multitarget.optimize_circuit(circuit)
+    drop_empty.optimize_circuit(circuit)
+    stick_to_cnot.optimize_circuit(circuit)
+    drop_empty.optimize_circuit(circuit)
+
+    return circuit
+
+
+def exhaust_optimization(circuit):
+    prev_circ_repr: str = ""
+    curr_circ_repr: str = get_unique_representation(circuit)
+
+    while prev_circ_repr != curr_circ_repr:
+        prev_circ_repr = curr_circ_repr
+        circuit = optimize(circuit)
+        curr_circ_repr = get_unique_representation(circuit)
+
+    return circuit
 
 
 #  -------------------------------------------------- PLOT UTILS --------------------------------------------------
