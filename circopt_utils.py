@@ -117,6 +117,26 @@ def plot_dataset():
     plot_results(times_av, depth_ratios, no_qubits=11, offset=4)
 
 
+def plot_optimization_result(initial_circuit: cirq.Circuit, final_circuit: cirq.Circuit) -> None:
+    initial_length = len(cirq.Circuit(initial_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST))
+    final_length = len(cirq.Circuit(final_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST))
+
+    initial_gate_count: int = 0
+    for moment in initial_circuit:
+        initial_gate_count += len(moment)
+
+    final_gate_count: int = 0
+    for moment in final_circuit:
+        final_gate_count += len(moment)
+
+    values = [initial_length, final_length, initial_gate_count, final_gate_count]
+    names = ['Initial length', 'Final length', 'Initial gate count', 'Final gate count']
+    fig, ax = plt.subplots()
+
+    ax.bar(names, values)
+    fig.savefig('evaluation.png', dpi=300)
+    plt.show()
+
 #  -------------------------------------------------- TEST UTILS --------------------------------------------------
 
 
@@ -199,10 +219,6 @@ def read_train_data(q_table_file: str, action_map_file: str, state_map_file: str
     state_map = json.load(file1)
     action_map_json = json.load(file2)
     action_map = {literal_eval(k): v for k, v in action_map_json.items()}
-
-    print(type(state_map))
-    print(type(action_map))
-
     return q_table, state_map, action_map
 
 
