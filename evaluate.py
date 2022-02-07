@@ -24,11 +24,12 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps=1):
 
         index = [index for index, value in enumerate(apply_on) if value[0].value == action[0] and value[2].name == action[1]]
 
+        if len(index) == 0:
+            return test_circuit
+
         if len(index) > 0:
             index = index[0]
             globals.random_moment = apply_on[index][1]
-        else:
-            continue
 
         if apply_on[index][0] == CircuitIdentity.REVERSED_CNOT:
             globals.working_optimizers["rerversecnot"].optimize_circuit(test_circuit)
