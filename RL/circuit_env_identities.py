@@ -1,3 +1,4 @@
+import json
 import math
 from typing import Tuple, List, Union, Any
 import numpy as np
@@ -14,8 +15,11 @@ from optimization.optimize_circuits import CircuitIdentity
 import logging
 import copy
 import random
-
+import collections
 logging.basicConfig(filename='logfile.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
+
+Step = collections.namedtuple('Step', 'max_len max_gate_count max_degree max_weight_av min_weight_av current_degree '
+                                      'current_len current_gate_count current_weight_av reward')
 
 
 class CircuitEnvIdent(gym.Env):
@@ -213,6 +217,14 @@ class CircuitEnvIdent(gym.Env):
             reward = pow(current_weight_av, 1 + self.max_degree / current_degree + self.max_len / current_len)
 
         print(f'Reward: {reward}')
+
+        current_step = Step(self.max_len, self.max_gate_count, self.max_degree, self.max_weight_av, self.min_weight_av,
+                            current_degree, current_len, current_gate_count, current_weight_av, reward)
+
+        j = json.dumps(current_step._asdict())
+        f = open("steps.txt", 'a')
+        f.write(j + '\n')
+        f.close()
 
         # 3. ---------------- Store the new "observation" for the state (Identity config) ----------------
 

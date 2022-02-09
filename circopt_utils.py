@@ -173,6 +173,27 @@ def plot_optimization_result(initial_circuit: cirq.Circuit, final_circuit: cirq.
     fig.savefig('evaluation.png', dpi=300)
     plt.show()
 
+
+def plot_reward_function():
+    f = open('steps.txt', 'r')
+    content = f.read()
+    df = pd.read_json(content, lines=True)
+    x = df['current_len']
+    y = df['current_weight_av']
+    z = df['reward']
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+
+    ax.set_xlabel('Length')
+    ax.set_ylabel('Gate Weighted Average')
+    ax.set_zlabel('Reward')
+
+    ax.scatter(x, y, z, c=z, cmap='viridis', linewidth=0.5)
+
+    ax.set_title('Reward function behaviour')
+    fig.savefig('reward3D.png', dpi=300)
+    #plt.show()
+
 #  -------------------------------------------------- TEST UTILS --------------------------------------------------
 
 

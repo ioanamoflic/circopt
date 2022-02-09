@@ -1,5 +1,6 @@
 import cirq
 
+import circopt_utils
 from RL.circuit_env_identities import CircuitEnvIdent
 from RL.q_learning import QAgent
 import routing.routing_multiple as rm
@@ -61,10 +62,12 @@ def run():
 
     env = CircuitEnvIdent(starting_circuit)
 
-    agent = QAgent(env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97)
+    agent = QAgent(env, n_ep=ep, max_iter=200, lr=0.01, gamma=0.97)
     agent.train(circuit_name)
     filename = f'{circuit_file}.csv'
     agent.show_evolution(filename=filename, bvz_bits=qbits, ep=ep)
+
+    circopt_utils.plot_reward_function()
 
 
 if __name__ == '__main__':
