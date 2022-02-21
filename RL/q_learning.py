@@ -1,11 +1,8 @@
-from typing import Tuple
+import csv
 
 import numpy as np
-from RL.circuit_env_identities import CircuitEnvIdent
 import circopt_utils
-import csv
-import json
-import global_stuff as g
+from RL.multi_env import SubprocVecEnv
 
 
 class QAgent:
@@ -13,9 +10,9 @@ class QAgent:
             Class used to train Q-learning agent on circuit optimization.
        """
 
-    def __init__(self, env, n_ep=20000, max_iter=100, exploration_proba=1, expl_decay=0.002, min_expl_proba=0.01,
+    def __init__(self, vec_env, n_ep=20000, max_iter=100, exploration_proba=1, expl_decay=0.001, min_expl_proba=0.01,
                  gamma=0.99, lr=0.1):
-        self.env: CircuitEnvIdent = env
+        self.env: SubprocVecEnv = vec_env
         self.n_episodes: int = n_ep
         self.max_iter_episode: int = max_iter
         self.exploration_proba: int = exploration_proba
@@ -26,63 +23,87 @@ class QAgent:
         self.rewards_per_episode = list()
         self.final_len_per_episode = list()
         self.final_gc_per_episode = list()
-        self.Q_table: np.ndarray = np.zeros(shape=(2, 2))
+        self.state_map = dict()
+        self.action_map = dict()
+        self.Q_table = np.zeros(shape=(2, 2))
 
-    def train(self, run_identifier: str) -> None:
+    def get_action_list(self, actions):
+        action_list = []
+        for action in actions:
+            for key, value in self.action_map.items():
+                if value == action:
+                    action_list.append(key)
+
+        return action_list
+
+    def train(self) -> None:
         """
         Performs off-policy control learning based on Bellman's equation.
         Q_table contains agent experience formed during training.
         :return: None
         """
 
+        current_states = self.env.reset()
+        for state in current_states:
+            if state not in self.state_map.keys():
+                self.state_map[state] = len(self.state_map)
+                self.Q_table = np.vstack((self.Q_table, np.zeros(self.Q_table.shape[1])))
+
         for e in range(self.n_episodes):
-            current_state: int = self.env.reset()
-            current_len: int = 0
-            current_gate_count: int = 0
-            total_episode_reward: float = 0.0
-            print('Episode', e)
+            current_states = self.env.reset()
+            mean_len = 0
+            mean_gate_count = 0
+            mean_reward = 0
 
-            for i in range(self.max_iter_episode):
+            for _ in range(self.max_iter_episode):
                 if np.random.uniform(0, 1) <= self.exploration_proba:
-                    action = 'random'
+                    actions = ['random'] * self.env.no_of_envs
                 else:
-                    action = np.argmax(self.Q_table[current_state, :])
+                    actions = [np.argmax(self.Q_table[self.state_map.get(current_state), :])
+                               for current_state in current_states]
+                    actions = self.get_action_list(actions)
 
-                next_state, reward, done, extra = self.env.step(action)
+                next_states, rewards, dones, infos = self.env.step(actions)
 
-                # #Alexandru
-                # import quantify.utils.misc_utils as mu
-                # print(mu.my_isinstance.cache_info())
-                # print(len(mu.my_cache), mu.my_cache_hits)
+                actions = []
+                mean_reward = np.mean(rewards)
+                mean_gate_count = np.array([])
+                mean_len = np.array([])
 
-                current_len = extra["current_len"]
-                action = extra['action']
-                current_gate_count = extra['current_gate_count']
+                for info in infos:
+                    if info["action"] not in self.action_map.keys():
+                        self.action_map[info["action"]] = len(self.action_map)
+                        self.Q_table = np.hstack((self.Q_table, np.zeros(self.Q_table.shape[0])[:, None]))
 
-                self.Q_table[current_state, action] = (1 - self.learning_rate) * self.Q_table[
-                    current_state, action] + self.learning_rate * (
-                                                              reward + self.discount_factor * np.max(
-                                                          self.Q_table[next_state, :]))
+                    if info["state"] not in self.state_map.keys():
+                        self.state_map[info["state"]] = len(self.state_map)
+                        self.Q_table = np.vstack((self.Q_table, np.zeros(self.Q_table.shape[1])))
 
-                total_episode_reward += reward
-                current_state = next_state
+                    actions.append(info['action'])
+                    mean_gate_count = np.append(mean_gate_count, info["current_gate_count"])
+                    mean_len = np.append(mean_len, info["current_len"])
 
-                if self.Q_table.shape[0] <= len(g.state_map_identity.keys()):
-                    self.Q_table = np.vstack((self.Q_table, np.zeros(self.Q_table.shape[1])))
+                mean_len = np.mean(mean_len)
+                mean_gate_count = np.mean(mean_gate_count)
 
-                if self.Q_table.shape[1] <= len(g.action_map.keys()):
-                    self.Q_table = np.hstack((self.Q_table, np.zeros(self.Q_table.shape[0])[:, None]))
+                for i in range(self.env.no_of_envs):
+                    state_index = self.state_map[current_states[i]]
+                    next_state_index = self.state_map[next_states[i]]
+                    action_index = self.action_map[actions[i]]
 
-                if done:
-                    break
+                    self.Q_table[state_index, action_index] = (1 - self.learning_rate) * self.Q_table[
+                        state_index, action_index] + self.learning_rate * (
+                                                                      rewards[i] + self.discount_factor * np.max(
+                                                                  self.Q_table[next_state_index, :]))
+
+                current_states = next_states
 
             self.exploration_proba = max(self.min_exploration_proba, np.exp(-self.exploration_decreasing_decay * e))
-            self.rewards_per_episode.append(total_episode_reward)
-            self.final_gc_per_episode.append(current_gate_count)
-            self.final_len_per_episode.append(current_len)
+            self.rewards_per_episode.append(mean_reward)
+            self.final_gc_per_episode.append(mean_gate_count)
+            self.final_len_per_episode.append(mean_len)
 
-            # save QTable state
-            circopt_utils.write_train_data(run_identifier, self.Q_table)
+           # circopt_utils.write_train_data(self.Q_table)
 
     def show_evolution(self, filename: str = '3bits.csv', bvz_bits: int = 3, ep: int = 8000) -> None:
         """
@@ -90,20 +111,22 @@ class QAgent:
         Plots mean rewards and mean circuit length per 10 episodes.
         :return: None
         """
-        episodes: np.ndarray = np.arange(1, ep + 1, 10)
-        all_episodes: np.ndarray = np.arange(1, ep + 1)
-        mean_rewards: np.ndarray = np.array([])
-        mean_lengths: np.ndarray = np.array([])
-        mean_gate_count: np.ndarray = np.array([])
+        episodes = np.arange(1, ep + 1, 10)
+        all_episodes = np.arange(1, ep + 1)
+        mean_rewards = np.array([])
+        mean_lengths = np.array([])
+        mean_gate_count = np.array([])
 
-        header = ['nr_qbits', 'episode', 'reward', 'final_length', 'final_gate_count', 'gamma', 'learning_rate', 'expl_decay']
+        header = ['nr_qbits', 'episode', 'reward', 'final_length', 'final_gate_count', 'gamma', 'learning_rate',
+                  'expl_decay']
         csv_lines = []
 
         with open(filename, 'w', encoding='UTF8', newline='\n') as f:
             writer = csv.writer(f)
             writer.writerow(header)
             for e in range(len(all_episodes)):
-                csv_lines.append([bvz_bits, e, self.rewards_per_episode[e], self.final_len_per_episode[e], self.final_gc_per_episode[e],
+                csv_lines.append([bvz_bits, e, self.rewards_per_episode[e], self.final_len_per_episode[e],
+                                  self.final_gc_per_episode[e],
                                   self.discount_factor, self.learning_rate, self.exploration_decreasing_decay]),
             writer.writerows(csv_lines)
 

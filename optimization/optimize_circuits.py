@@ -89,3 +89,7 @@ class CircuitIdentity(Enum):
     T_GATE_LEFT = auto()
     T_GATE_RIGHT = auto()
     STICK_CNOTS = auto()
+    CANCEL_HADAMARDS = auto()
+    CANCEL_CNOTS = auto()
+    STICK_MULTITARGET = auto()
+    STICK_MULTITARGET_TO_CNOT = auto()

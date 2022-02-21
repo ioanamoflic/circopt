@@ -1,14 +1,19 @@
 import cirq
 
+from optimization.optimize_circuits import CircuitIdentity
+
 
 class StickMultiTarget(cirq.PointOptimizer):
-    def __init__(self, optimize_till: int = None):
+    def __init__(self, moment=None, qubit=None, only_count=False):
         super().__init__()
-        self.optimize_till = optimize_till
-        self.reward = 0.0
+        self.only_count = only_count
+        self.count = 0
+        self.moment_index_qubit = []
+        self.moment = moment
+        self.qubit = qubit
 
     def optimization_at(self, circuit, index, op):
-        if self.optimize_till is not None and index >= self.optimize_till:
+        if (index != self.moment or op.qubits[0] != self.qubit) and not self.only_count:
             return None
 
         if hasattr(op, "allow"):
@@ -31,7 +36,6 @@ class StickMultiTarget(cirq.PointOptimizer):
                     targets_right = cnot.qubits[1:]
 
                     if control_left == control_right:
-                        # de verificat sa fie targets distincti
                         sl = set(targets_left)
                         sr = set(targets_right)
 
@@ -46,9 +50,13 @@ class StickMultiTarget(cirq.PointOptimizer):
                         c_op = gate.controlled().on(*targets)
                         new_op = [c_op]
 
+                        if self.only_count:
+                            self.count += 1
+                            self.moment_index_qubit.append((CircuitIdentity.STICK_MULTITARGET, index, op.qubits[0]))
+                            return None
+
                         setattr(cnot, "allow", False)
 
-                        self.reward += 0.2
                         return cirq.PointOptimizationSummary(
                             clear_span=1,
                             clear_qubits=targets,

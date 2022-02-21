@@ -1,36 +1,35 @@
-import json
-import math
-from typing import Tuple, List, Union, Any
-import numpy as np
+from typing import Tuple, List, Union
+
 import gym
+import numpy as np
 import cirq
 import global_stuff as g
-from optimization.stick_multitarget_to_CNOT import StickMultiTargetToCNOT
-from optimization.stick_CNOTs import StickCNOTs
-from optimization.stick_multitarget import StickMultiTarget
-import circopt_utils
-import quantify.optimizers as cnc
 import quantify.utils.misc_utils as mu
 from optimization.optimize_circuits import CircuitIdentity
 import logging
 import copy
 import random
-import collections
-logging.basicConfig(filename='logfile.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
+from optimization.reverse_CNOT import ReverseCNOT
+from optimization.hadamard_square import HadamardSquare
+from optimization.top_left_hadamard import TopLeftHadamard
+from optimization.one_H_left_2_right import OneHLeftTwoRight
+from optimization.stick_multitarget_to_CNOT import StickMultiTargetToCNOT
+from optimization.stick_CNOTs import StickCNOTs
+from optimization.stick_multitarget import StickMultiTarget
+from quantify.optimizers.cancel_ngh_cnots import CancelNghCNOTs
+from quantify.optimizers.cancel_ngh_hadamard import CancelNghHadamards
 
-Step = collections.namedtuple('Step', 'max_len max_gate_count max_degree max_weight_av min_weight_av current_degree '
-                                      'current_len current_gate_count current_weight_av reward')
+
+logging.basicConfig(filename='logfile.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
 
 
 class CircuitEnvIdent(gym.Env):
     """
     An OpenAI Gym circuit environment.
     """
-    metadata = {'render.modes': ['human']}
     NO_ACTIONS = 2
     CNOT_WEIGHT = 5.0
-    # MULTITARGET_WEIGHT = 3.0
-    H_WEIGHT = 0.5
+    H_WEIGHT = 1.5
 
     def __init__(self, starting_circuit: cirq.Circuit):
         super(CircuitEnvIdent, self).__init__()
@@ -40,24 +39,14 @@ class CircuitEnvIdent(gym.Env):
         self.done: bool = False
         self.len_start: int = self._len_move_to_left()
         self.could_apply_on: List[Tuple[int, int]] = list()
-
-        # self.previous_degree = self._get_circuit_degree()
-        # self.previous_gate_count: int = self._get_gate_count()
-        # self.previous_len: float = self._len_move_to_left()
-
-        self.max_len = 0
-        self.max_gate_count = 0
-        self.max_degree = 0
-        self.max_weight_av = 0
-        self.min_weight_av = self._get_weighted_av()
+        self.max_len = self._len_move_to_left()
+        self.max_gate_count = self._get_gate_count()
+        self.max_degree = self._get_circuit_degree()
+        self.max_weight_av = self._get_weighted_av()
+        self.min_weight_av = self._get_weighted_av() / 5
 
         # optimizers
-        self.cancel_cnots = cnc.CancelNghCNOTs()
         self.drop_empty = cirq.optimizers.DropEmptyMoments()
-        self.stick_cnots = StickCNOTs()
-        self.cancel_hadamards = cnc.CancelNghHadamards()
-        self.stick_multitarget = StickMultiTarget()
-        self.stick_to_cnot = StickMultiTargetToCNOT()
 
     def _get_weighted_av(self) -> float:
         div_by = self.CNOT_WEIGHT + self.H_WEIGHT
@@ -77,64 +66,71 @@ class CircuitEnvIdent(gym.Env):
             counter += len(moment)
         return counter
 
-    def _get_cnot_gate_count(self) -> int:
-        counter: int = 0
-        for moment in self.current_circuit:
-            for op in moment:
-                if len(op.qubits) >= 2:
-                    counter += 1
-        return counter
+    def sort_tuple_list(self, tup):
+        tup.sort(key=lambda x: x[1])
+        return tup
 
-    def _get_random_action(self) -> Tuple[Tuple[int, Any, int], int]:
-        random_index = random.randint(0, len(self.could_apply_on) - 1)
-        g.random_moment = self.could_apply_on[random_index][1]
-        qubit = self.could_apply_on[random_index][2]
-        identity = self.could_apply_on[random_index][0]
+    def _get_all_possible_identities(self):
+        all_possibilities = list()
+        identity_state: str = ''
 
-        tup = (identity, qubit, random.randint(0, 1))
-        if tup not in g.action_map.keys():
-            g.action_map[tup] = len(g.action_map)
+        for opt_circuit in counting_optimizers.values():
+            opt_circuit.optimize_circuit(self.current_circuit)
+            identity_state = identity_state + str(opt_circuit.count) + '_'
+            all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
 
-        return tup, random_index
+            opt_circuit.count = 0
+            opt_circuit.moment_index_qubit.clear()
 
-    def _apply_identity(self, action: int, index: int) -> None:
+        return self.sort_tuple_list(all_possibilities), identity_state
+
+    def _apply_identity(self, action: int, index: int):
         if action == 0 or index == -1:
             return
 
         if action == 1:
-            if self.could_apply_on[index][0] == CircuitIdentity.REVERSED_CNOT:
-                g.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
+            identity = self.could_apply_on[index][0]
+            moment = self.could_apply_on[index][1]
+            qub = self.could_apply_on[index][2]
+
+            for optimizer in working_optimizers.values():
+                optimizer.moment = moment
+                optimizer.qubit = qub
+
+            if identity == CircuitIdentity.REVERSED_CNOT:
+                working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
                 return
 
-            if self.could_apply_on[index][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
-                g.working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
+            if identity == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
+                working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
                 return
 
-            if self.could_apply_on[index][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
-                g.working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
+            if identity == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
+                working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
                 return
 
-            if self.could_apply_on[index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
-                g.working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
+            if identity == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
+                working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
+                return
 
-    def _optimize(self) -> float:
-        add_to_reward = 0.0
-        try:
-            self.cancel_cnots.optimize_circuit(self.current_circuit)
-            add_to_reward += self.cancel_cnots.reward
-            self.drop_empty.optimize_circuit(self.current_circuit)
-            self.stick_cnots.optimize_circuit(self.current_circuit)
-            add_to_reward += self.stick_cnots.reward
-            self.cancel_hadamards.optimize_circuit(self.current_circuit)
-            self.stick_multitarget.optimize_circuit(self.current_circuit)
-            add_to_reward += self.stick_multitarget.reward
-            self.drop_empty.optimize_circuit(self.current_circuit)
-            self.stick_to_cnot.optimize_circuit(self.current_circuit)
-            add_to_reward += self.stick_to_cnot.reward
-            self.drop_empty.optimize_circuit(self.current_circuit)
-        except Exception as arg:
-            logging.error(f'Error while applying optimization : {arg}')
-        return add_to_reward
+            if identity == CircuitIdentity.CANCEL_CNOTS:
+                working_optimizers["cancelcnots"].optimize_circuit(self.current_circuit)
+                return
+
+            if identity == CircuitIdentity.CANCEL_HADAMARDS:
+                working_optimizers["cancelh"].optimize_circuit(self.current_circuit)
+                return
+
+            if identity == CircuitIdentity.STICK_CNOTS:
+                working_optimizers["cnot+cnot"].optimize_circuit(self.current_circuit)
+                return
+
+            if identity == CircuitIdentity.STICK_MULTITARGET:
+                working_optimizers["multi+multi"].optimize_circuit(self.current_circuit)
+                return
+
+            if identity == CircuitIdentity.STICK_MULTITARGET_TO_CNOT:
+                working_optimizers["multi+cnot"].optimize_circuit(self.current_circuit)
 
     def _get_circuit_degree(self) -> np.ndarray:
         degrees = np.zeros(len(self.current_circuit.all_qubits()))
@@ -156,42 +152,25 @@ class CircuitEnvIdent(gym.Env):
         n_circuit = cirq.Circuit(self.current_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)
         return len(n_circuit)
 
-    def _exhaust_optimization(self) -> float:
-        reward = 0.0
-        prev_circ_repr = ""
-        curr_circ_repr = circopt_utils.get_unique_representation(self.current_circuit)
-
-        while prev_circ_repr != curr_circ_repr:
-            prev_circ_repr = curr_circ_repr
-            reward += self._optimize()
-            curr_circ_repr = circopt_utils.get_unique_representation(self.current_circuit)
-
-        return reward
-
-    # @g.timing
-    def step(self, action: Union[int, str]) -> Tuple[int, float, bool, dict]:
+    def step(self, action: Union[int, str]) -> Tuple[str, float, bool, dict]:
         # 1. ---------------- Update the environment state based on the chosen action ----------------
 
+        print('Current circuit: \n', self.current_circuit)
+
         if action == 'random':
-            self.current_action, list_index = self._get_random_action()
+            list_index = random.randint(0, len(self.could_apply_on) - 1)
+            qubit = self.could_apply_on[list_index][2]
+            identity = self.could_apply_on[list_index][0]
+            self.current_action = (identity, qubit, random.randint(0, 1))
         else:
-            self.current_action = circopt_utils.get_action_by_value(action)
+            self.current_action = action
             list_index = [index for index, value in enumerate(self.could_apply_on)
                           if value[0] == self.current_action[0] and value[2] == self.current_action[1]]
 
-            if len(list_index) > 0:
-                list_index = list_index[0]
-                g.random_moment = self.could_apply_on[list_index][1]
-            else:
-                list_index = -1
-
-        print(f'Step self.could_apply_on: {self.could_apply_on}')
-        print('Current circuit: \n', self.current_circuit)
-        print('Chosen action: ', self.current_action)
+            list_index = list_index[0] if len(list_index) > 0 else -1
 
         self._apply_identity(self.current_action[2], index=list_index)
-        self._exhaust_optimization()
-
+        self.drop_empty.optimize_circuit(self.current_circuit)
         print('Optimized circuit: \n', self.current_circuit)
 
         current_degree = self._get_circuit_degree()
@@ -199,46 +178,23 @@ class CircuitEnvIdent(gym.Env):
         current_gate_count: int = self._get_gate_count()
         current_weight_av = self._get_weighted_av()
 
-        extra = dict()
-        extra["current_len"] = current_len
-        extra['current_gate_count'] = current_gate_count
-        extra["action"] = g.state_map_identity.get(self.current_action)
+        info = dict()
+        info["current_len"] = current_len
+        info['current_gate_count'] = current_gate_count
+        info["action"] = self.current_action
 
         # 2. ---------------- Calculate the "reward" for the new state of the circuit ----------------
 
-        # mexp = max(0.0, self.previous_len - current_len)
-        # contrast = (self.previous_gate_count - current_gate_count) / (self.previous_gate_count + current_gate_count)
-        # contrast += 2
-        # reward = pow(contrast, 1 + mexp)
-        if current_weight_av - self.min_weight_av > 0:
-            reward = pow(self.min_weight_av / current_weight_av,
-                         1 + self.max_degree / current_degree + self.max_len / current_len)
-        else:
-            reward = pow(current_weight_av, 1 + self.max_degree / current_degree + self.max_len / current_len)
+        reward = np.exp((1 + self.max_degree / current_degree * self.max_len / current_len)
+                        * np.log(1 + self.min_weight_av / current_weight_av))
 
-        print(f'Reward: {reward}')
-
-        current_step = Step(self.max_len, self.max_gate_count, self.max_degree, self.max_weight_av, self.min_weight_av,
-                            current_degree, current_len, current_gate_count, current_weight_av, reward)
-
-        j = json.dumps(current_step._asdict())
-        f = open("steps.txt", 'a')
-        f.write(j + '\n')
-        f.close()
-
-        # 3. ---------------- Store the new "observation" for the state (Identity config) ----------------
-
-        self.could_apply_on, identity_int_string = circopt_utils.get_all_possible_identities(self.current_circuit)
-        if identity_int_string not in g.state_map_identity.keys():
-            g.state_map_identity[identity_int_string] = len(g.state_map_identity)
-
-        if len(self.could_apply_on) == 0:
-            self.done = True
-
-        observation = g.state_map_identity.get(identity_int_string)
-        # self.previous_degree = current_degree
-        # self.previous_gate_count = current_gate_count
-        # self.previous_len = current_len
+        print(f'Reward: {reward} \n'
+              f'Max degree: {self.max_degree} \n'
+              f'Current degree: {current_degree} \n'
+              f'Max len: {self.max_len} \n'
+              f'Current len: {current_len} \n'
+              f'Min w av: {self.min_weight_av} \n'
+              f'Current w av: {current_weight_av} \n')
 
         self.max_len = max(self.max_len, current_len)
         self.max_gate_count = max(self.max_gate_count, current_gate_count)
@@ -246,20 +202,24 @@ class CircuitEnvIdent(gym.Env):
         self.max_weight_av = max(self.max_weight_av, current_weight_av)
         self.min_weight_av = min(self.min_weight_av, current_weight_av)
 
-        return observation, reward, self.done, extra
+        # 3. ---------------- Store the new "observation" for the state (Identity config) ----------------
+
+        self.could_apply_on, identity_int_string = self._get_all_possible_identities()
+
+        if len(self.could_apply_on) == 0:
+            self.done = True
+
+        observation = identity_int_string
+        info["state"] = observation
+
+        return observation, reward, self.done, info
 
     def reset(self):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
-        self._exhaust_optimization()
-        # self.previous_degree = self._get_circuit_degree()
-        # self.previous_len = self._len_move_to_left()
-        # self.previous_gate_count = self._get_gate_count()
         self.done = False
-        self.could_apply_on, identity_int_string = circopt_utils.get_all_possible_identities(self.current_circuit)
-        if identity_int_string not in g.state_map_identity.keys():
-            g.state_map_identity[identity_int_string] = len(g.state_map_identity)
+        self.could_apply_on, identity_int_string = self._get_all_possible_identities()
 
-        return g.state_map_identity.get(identity_int_string)
+        return identity_int_string
 
     def render(self, mode='human', close=False):
         if self.current_action == (0, 0, 0):
@@ -267,3 +227,28 @@ class CircuitEnvIdent(gym.Env):
             return
         print(f'Chosen action: {self.current_action}')
         print(f'Current circuit depth: {len(self.current_circuit)}')
+
+
+counting_optimizers = {
+    "onehleft": OneHLeftTwoRight(only_count=True),
+    "toplefth": TopLeftHadamard(only_count=True),
+    "rerversecnot": ReverseCNOT(only_count=True),
+    "hadamardsquare": HadamardSquare(only_count=True),
+    "cancelcnots": CancelNghCNOTs(only_count=True),
+    "cancelh": CancelNghHadamards(only_count=True),
+    "cnot+cnot": StickCNOTs(only_count=True),
+    "multi+multi": StickMultiTarget(only_count=True),
+    "multi+cnot": StickMultiTargetToCNOT(only_count=True)
+}
+
+working_optimizers = {
+    "onehleft": OneHLeftTwoRight(),
+    "toplefth": TopLeftHadamard(),
+    "rerversecnot": ReverseCNOT(),
+    "hadamardsquare": HadamardSquare(),
+    "cancelcnots": CancelNghCNOTs(),
+    "cancelh": CancelNghHadamards(),
+    "cnot+cnot": StickCNOTs(),
+    "multi+multi": StickMultiTarget(),
+    "multi+cnot": StickMultiTargetToCNOT()
+}

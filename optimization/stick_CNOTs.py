@@ -1,15 +1,19 @@
 import cirq
 import quantify.utils.misc_utils as mu
+from optimization.optimize_circuits import CircuitIdentity
 
 
 class StickCNOTs(cirq.PointOptimizer):
-    def __init__(self, optimize_till: int = None):
+    def __init__(self, moment=None, qubit=None, only_count=False):
         super().__init__()
-        self.optimize_till = optimize_till
-        self.reward = 0.0
+        self.only_count = only_count
+        self.count = 0
+        self.moment_index_qubit = []
+        self.moment = moment
+        self.qubit = qubit
 
     def optimization_at(self, circuit, index, op):
-        if self.optimize_till is not None and index >= self.optimize_till:
+        if (index != self.moment or op.qubits[0] != self.qubit) and not self.only_count:
             return None
 
         if hasattr(op, "allow"):
@@ -45,7 +49,10 @@ class StickCNOTs(cirq.PointOptimizer):
 
                         new_op = [c_op]
 
-                        self.reward += 0.1
+                        if self.only_count:
+                            self.count += 1
+                            self.moment_index_qubit.append((CircuitIdentity.STICK_CNOTS, index, op.qubits[0]))
+                            return None
 
                         # remove remaining op (cnot)
                         setattr(cnot, "allow", False)

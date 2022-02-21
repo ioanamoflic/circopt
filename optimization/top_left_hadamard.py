@@ -1,27 +1,25 @@
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
-import global_stuff as g
 import quantify.utils.misc_utils as mu
 
 
 class TopLeftHadamard(cirq.PointOptimizer):
-    def __init__(self, only_count=False):
+    def __init__(self, moment=None, qubit=None, only_count=False):
         super().__init__()
         self.only_count = only_count
         self.count = 0
         self.moment_index_qubit = []
+        self.moment = moment
+        self.qubit = qubit
 
     def optimization_at(self, circuit, index, op):
-        if index != g.random_moment and not self.only_count:
+        if (index != self.moment or op.qubits[0] != self.qubit) and not self.only_count:
             return None
 
         if mu.my_isinstance(op, cirq.H):
 
             next_op_index = circuit.next_moment_operating_on(op.qubits, start_moment_index=index + 1)
             qubit = op.qubits[0]
-
-            if next_op_index != index + 1:
-                return None
 
             if next_op_index is not None:
 
@@ -32,7 +30,7 @@ class TopLeftHadamard(cirq.PointOptimizer):
                     target = cnot.qubits[1]
 
                     if qubit == control:
-                        new_op = [cirq.H.on(control), cirq.CNOT.on(control, target), cirq.H.on(control), cirq.H.on(target)]
+                        new_op = [cirq.H.on(control), cirq.CNOT.on(target, control), cirq.H.on(control), cirq.H.on(target)]
 
                         if self.only_count:
                             self.count += 1

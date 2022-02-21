@@ -1,4 +1,6 @@
 import json
+import pickle
+
 from numpy import ndarray
 
 from typing import List, Tuple, Union, Dict, Any
@@ -9,15 +11,12 @@ import global_stuff as g
 import numpy as np
 import matplotlib.pyplot as plt
 from routing.routing_utils import plot_results
-from ast import literal_eval
 import quantify.optimizers as cnc
 
 from optimization.stick_CNOTs import StickCNOTs
 from optimization.stick_multitarget import StickMultiTarget
 from optimization.stick_multitarget_to_CNOT import StickMultiTargetToCNOT
 from optimization.optimize_circuits import CircuitIdentity
-
-
 cancel_cnots = cnc.CancelNghCNOTs()
 drop_empty = cirq.optimizers.DropEmptyMoments()
 stick_cnots = StickCNOTs()
@@ -26,36 +25,6 @@ stick_multitarget = StickMultiTarget()
 stick_to_cnot = StickMultiTargetToCNOT()
 
 #  -------------------------------------------------- TRAIN UTILS --------------------------------------------------
-
-
-def get_action_by_value(value: int) -> Union[Tuple[int, int, int], None]:
-    for tuple, index in g.action_map.items():
-        if index == value:
-            return tuple
-    return None
-
-
-def sort_tuple_list(tup):
-    tup.sort(key=lambda x: x[1])
-    return tup
-
-
-def get_all_possible_identities(circuit) -> Tuple[List[Tuple[CircuitIdentity, int]], str]:
-    all_possibilities = list()
-    identity_state: str = ''
-
-    # Iterate over the counting optimizers
-    for opt_circuit in g.counting_optimizers.values():
-        opt_circuit.optimize_circuit(circuit)
-        identity_state = identity_state + str(opt_circuit.count) + '_'
-        all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
-
-        # reset the optimizer
-        opt_circuit.count = 0
-        opt_circuit.moment_index_qubit.clear()
-
-    return sort_tuple_list(all_possibilities), identity_state
-
 
 def to_str(config: List[int]) -> str:
     current_config_as_string: str = "".join(
@@ -100,7 +69,6 @@ def exhaust_optimization(circuit):
         curr_circ_repr = get_unique_representation(circuit)
 
     return circuit
-
 
 #  -------------------------------------------------- PLOT UTILS --------------------------------------------------
 
@@ -269,19 +237,15 @@ def read_and_merge_all(q_tables: List[str], state_maps: List[str], action_maps: 
     return final_q_table, final_state_map, final_action_map
 
 
-def read_train_data(q_table_file: str, action_map_file: str, state_map_file: str):
-    q_table = np.load(q_table_file)
-    file1 = open(state_map_file, 'r')
-    file2 = open(action_map_file, 'r')
-    state_map = json.load(file1)
-    action_map_json = json.load(file2)
-    action_map = {literal_eval(k): v for k, v in action_map_json.items()}
-    return q_table, state_map, action_map
+def read_train_data():
+    q_table = np.load('train_data/QTable.npy')
+    states = np.load('train_data/states.npy')
+    actions = np.load('train_data/actions.npy')
+    return q_table, states, actions
 
 
-def write_train_data(identifier: str, q_table):
-    np.save(f'train_data/{identifier}_QTable.npy', q_table)
-    with open(f'train_data/{identifier}_State_Map.txt', 'w') as f1:
-        json.dump(g.state_map_identity, f1)
-    with open(f'train_data/{identifier}_Action_Map.txt', 'w') as f2:
-        json.dump({str((k[0].value, k[1].name, k[2])): v for k, v in g.action_map.items()}, f2)
+def write_train_data(q_table):
+    np.save(f'train_data/QTable.npy', q_table)
+
+
+
