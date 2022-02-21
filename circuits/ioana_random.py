@@ -26,7 +26,7 @@ def get_random_circuit(nr_qubits: int, big_o_const: int):
     qubits = [cirq.NamedQubit(str(i)) for i in range(nr_qubits)]
     circuit = cirq.Circuit()
 
-    degree = 4
+    degree = 2
     total_depth = big_o_const * nr_qubits ** degree
     for i in range(total_depth):
         if random.randint(1, 10) <= 4:

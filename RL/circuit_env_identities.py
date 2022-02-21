@@ -3,7 +3,6 @@ from typing import Tuple, List, Union
 import gym
 import numpy as np
 import cirq
-import global_stuff as g
 import quantify.utils.misc_utils as mu
 from optimization.optimize_circuits import CircuitIdentity
 import logging
@@ -27,7 +26,6 @@ class CircuitEnvIdent(gym.Env):
     """
     An OpenAI Gym circuit environment.
     """
-    NO_ACTIONS = 2
     CNOT_WEIGHT = 5.0
     H_WEIGHT = 1.5
 
@@ -97,40 +95,44 @@ class CircuitEnvIdent(gym.Env):
                 optimizer.moment = moment
                 optimizer.qubit = qub
 
-            if identity == CircuitIdentity.REVERSED_CNOT:
-                working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
-                return
+            try:
+                if identity == CircuitIdentity.REVERSED_CNOT:
+                    working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
+                    return
 
-            if identity == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
-                working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
-                return
+                if identity == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
+                    working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
+                    return
 
-            if identity == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
-                working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
-                return
+                if identity == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
+                    working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
+                    return
 
-            if identity == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
-                working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
-                return
+                if identity == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
+                    working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
+                    return
 
-            if identity == CircuitIdentity.CANCEL_CNOTS:
-                working_optimizers["cancelcnots"].optimize_circuit(self.current_circuit)
-                return
+                if identity == CircuitIdentity.CANCEL_CNOTS:
+                    working_optimizers["cancelcnots"].optimize_circuit(self.current_circuit)
+                    return
 
-            if identity == CircuitIdentity.CANCEL_HADAMARDS:
-                working_optimizers["cancelh"].optimize_circuit(self.current_circuit)
-                return
+                if identity == CircuitIdentity.CANCEL_HADAMARDS:
+                    working_optimizers["cancelh"].optimize_circuit(self.current_circuit)
+                    return
 
-            if identity == CircuitIdentity.STICK_CNOTS:
-                working_optimizers["cnot+cnot"].optimize_circuit(self.current_circuit)
-                return
+                if identity == CircuitIdentity.STICK_CNOTS:
+                    working_optimizers["cnot+cnot"].optimize_circuit(self.current_circuit)
+                    return
 
-            if identity == CircuitIdentity.STICK_MULTITARGET:
-                working_optimizers["multi+multi"].optimize_circuit(self.current_circuit)
-                return
+                if identity == CircuitIdentity.STICK_MULTITARGET:
+                    working_optimizers["multi+multi"].optimize_circuit(self.current_circuit)
+                    return
 
-            if identity == CircuitIdentity.STICK_MULTITARGET_TO_CNOT:
-                working_optimizers["multi+cnot"].optimize_circuit(self.current_circuit)
+                if identity == CircuitIdentity.STICK_MULTITARGET_TO_CNOT:
+                    working_optimizers["multi+cnot"].optimize_circuit(self.current_circuit)
+
+            except Exception as e:
+                logging.error(f'Error during optimization! {e}')
 
     def _get_circuit_degree(self) -> np.ndarray:
         degrees = np.zeros(len(self.current_circuit.all_qubits()))
@@ -185,7 +187,7 @@ class CircuitEnvIdent(gym.Env):
 
         # 2. ---------------- Calculate the "reward" for the new state of the circuit ----------------
 
-        reward = np.exp((1 + self.max_degree / current_degree * self.max_len / current_len)
+        reward = np.exp((1 + (self.max_degree / current_degree) * (self.max_len / current_len))
                         * np.log(1 + self.min_weight_av / current_weight_av))
 
         print(f'Reward: {reward} \n'
