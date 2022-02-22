@@ -157,8 +157,6 @@ class CircuitEnvIdent(gym.Env):
     def step(self, action: Union[int, str]) -> Tuple[str, float, bool, dict]:
         # 1. ---------------- Update the environment state based on the chosen action ----------------
 
-        print('Current circuit: \n', self.current_circuit)
-
         if action == 'random':
             list_index = random.randint(0, len(self.could_apply_on) - 1)
             qubit = self.could_apply_on[list_index][2]
@@ -173,7 +171,6 @@ class CircuitEnvIdent(gym.Env):
 
         self._apply_identity(self.current_action[2], index=list_index)
         self.drop_empty.optimize_circuit(self.current_circuit)
-        print('Optimized circuit: \n', self.current_circuit)
 
         current_degree = self._get_circuit_degree()
         current_len: int = self._len_move_to_left()
@@ -190,13 +187,9 @@ class CircuitEnvIdent(gym.Env):
         reward = np.exp((1 + (self.max_degree / current_degree) * (self.max_len / current_len))
                         * np.log(1 + self.min_weight_av / current_weight_av))
 
-        print(f'Reward: {reward} \n'
-              f'Max degree: {self.max_degree} \n'
-              f'Current degree: {current_degree} \n'
-              f'Max len: {self.max_len} \n'
-              f'Current len: {current_len} \n'
-              f'Min w av: {self.min_weight_av} \n'
-              f'Current w av: {current_weight_av} \n')
+        # reward, max_degree, current_degree, max_len, current_len, min_w_av, current_w_av
+        logging.info(msg=f'{reward},{self.max_degree},{current_degree},{self.max_len},'
+                         f'{current_len},{self.min_weight_av},{current_weight_av}')
 
         self.max_len = max(self.max_len, current_len)
         self.max_gate_count = max(self.max_gate_count, current_gate_count)
@@ -220,6 +213,8 @@ class CircuitEnvIdent(gym.Env):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
         self.done = False
         self.could_apply_on, identity_int_string = self._get_all_possible_identities()
+        logging.info(msg="Environment reset")
+
         return identity_int_string
 
     def render(self, mode='human', close=False):
