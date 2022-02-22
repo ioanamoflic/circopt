@@ -167,7 +167,7 @@ class CircuitEnvIdent(gym.Env):
         else:
             self.current_action = action
             list_index = [index for index, value in enumerate(self.could_apply_on)
-                          if value[0] == self.current_action[0] and value[2] == self.current_action[1]]
+                          if value[0] == self.current_action[0] and value[2].name == self.current_action[1]]
 
             list_index = list_index[0] if len(list_index) > 0 else -1
 
@@ -220,7 +220,6 @@ class CircuitEnvIdent(gym.Env):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
         self.done = False
         self.could_apply_on, identity_int_string = self._get_all_possible_identities()
-
         return identity_int_string
 
     def render(self, mode='human', close=False):

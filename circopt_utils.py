@@ -1,10 +1,11 @@
 import json
 import pickle
+from ast import literal_eval
 
 from numpy import ndarray
 
 from typing import List, Tuple, Union, Dict, Any
-
+import json
 import cirq
 import pandas as pd
 import global_stuff as g
@@ -239,13 +240,22 @@ def read_and_merge_all(q_tables: List[str], state_maps: List[str], action_maps: 
 
 def read_train_data():
     q_table = np.load('train_data/QTable.npy')
-    states = np.load('train_data/states.npy')
-    actions = np.load('train_data/actions.npy')
-    return q_table, states, actions
+    file1 = open('train_data/states.txt', 'r')
+    file2 = open('train_data/actions.txt', 'r')
+    state_map = json.load(file1)
+    action_map_json = json.load(file2)
+    action_map = {literal_eval(k): v for k, v in action_map_json.items()}
+    return q_table, state_map, action_map
 
 
-def write_train_data(q_table):
-    np.save(f'train_data/QTable.npy', q_table)
+def write_train_data(q_table, state_map, action_map):
+    np.save('train_data/QTable.npy', q_table)
+    with open('train_data/states.txt', 'w') as f1:
+        json.dump(state_map, f1)
+    with open('train_data/actions.txt', 'w') as f2:
+        json.dump({str((k[0].value, k[1].name, k[2])): v for k, v in action_map.items()}, f2)
+
+
 
 
 
