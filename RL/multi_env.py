@@ -3,7 +3,28 @@ from multiprocessing import Pipe, Process
 import pickle
 import cloudpickle
 import numpy as np
-from stable_baselines.common.vec_env import AlreadySteppingError, NotSteppingError
+
+
+class AlreadySteppingError(Exception):
+    """
+    Raised when an asynchronous step is running while
+    step_async() is called again.
+    """
+
+    def __init__(self):
+        msg = 'already running an async step'
+        Exception.__init__(self, msg)
+
+
+class NotSteppingError(Exception):
+    """
+    Raised when an asynchronous step is not running but
+    step_wait() is called.
+    """
+
+    def __init__(self):
+        msg = 'not running an async step'
+        Exception.__init__(self, msg)
 
 
 class CloudpickleWrapper(object):

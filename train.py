@@ -4,6 +4,8 @@ from RL.multi_env import SubprocVecEnv
 from RL.q_learning import QAgent
 from circuits.ioana_random import *
 import sys
+import fnmatch
+import os
 
 
 def benchmark_parallelisation():
@@ -31,29 +33,35 @@ def benchmark_parallelisation():
     return
 
 
-def make_mp_envs(env_id, num_env, seed, json_string, start_idx=0):
-    def make_env(rank):
+def make_mp_envs(num_env, seed, circuits, start_idx=0):
+    def make_env(rank, circuit_json):
         def fn():
-            starting_circuit = cirq.read_json(json_text=json_string)
+            starting_circuit = cirq.read_json(json_text=circuit_json)
             env = CircuitEnvIdent(starting_circuit)
             env.seed(seed + rank)
             return env
 
         return fn
 
-    return SubprocVecEnv([make_env(i + start_idx) for i in range(num_env)])
+    return SubprocVecEnv([make_env(i + start_idx, circuits[start_idx]) for i in range(num_env)])
 
 
 def run():
     ep = 3000
-    circuit_file = sys.argv[1]
+    batch_number = sys.argv[1]
 
     random.seed(0)
 
-    f = open(circuit_file, 'r')
-    json_string = f.read()
-    vec_env = make_mp_envs(None, 2, random.randint(0, 7), json_string)
-    agent = QAgent(vec_env, n_ep=ep, max_iter=50, lr=0.01, gamma=0.97)
+    circuits = []
+    for file in os.listdir('./train_circuits'):
+        if fnmatch.fnmatch(file, f'TRAIN_{batch_number}*.txt'):
+            print(file)
+            f = open(f'train_circuits/{file}', 'r')
+            json_string = f.read()
+            circuits.append(json_string)
+
+    vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 8), circuits=circuits)
+    agent = QAgent(vec_env, n_ep=ep, max_iter=75, lr=0.01, gamma=0.97)
     agent.train()
     filename = f'test.csv'
     agent.show_evolution(filename=filename, bvz_bits=15, ep=ep)
