@@ -34,7 +34,9 @@ class TopLeftHadamard(cirq.PointOptimizer):
 
                         if self.only_count:
                             self.count += 1
-                            self.moment_index_qubit.append((CircuitIdentity.ONE_HADAMARD_UP_LEFT, index, qubit))
+                            self.moment_index_qubit.append(
+                                (CircuitIdentity.ONE_HADAMARD_UP_LEFT.value, index, qubit)
+                            )
                             return None
 
                         return cirq.PointOptimizationSummary(

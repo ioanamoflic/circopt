@@ -96,39 +96,39 @@ class CircuitEnvIdent(gym.Env):
                 optimizer.qubit = qub
 
             try:
-                if identity == CircuitIdentity.REVERSED_CNOT:
+                if identity == CircuitIdentity.REVERSED_CNOT.value:
                     working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
                     return
 
-                if identity == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
+                if identity == CircuitIdentity.ONE_HADAMARD_UP_LEFT.value:
                     working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
                     return
 
-                if identity == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
+                if identity == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT.value:
                     working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
                     return
 
-                if identity == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
+                if identity == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT.value:
                     working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
                     return
 
-                if identity == CircuitIdentity.CANCEL_CNOTS:
+                if identity == CircuitIdentity.CANCEL_CNOTS.value:
                     working_optimizers["cancelcnots"].optimize_circuit(self.current_circuit)
                     return
 
-                if identity == CircuitIdentity.CANCEL_HADAMARDS:
+                if identity == CircuitIdentity.CANCEL_HADAMARDS.value:
                     working_optimizers["cancelh"].optimize_circuit(self.current_circuit)
                     return
 
-                if identity == CircuitIdentity.STICK_CNOTS:
+                if identity == CircuitIdentity.STICK_CNOTS.value:
                     working_optimizers["cnot+cnot"].optimize_circuit(self.current_circuit)
                     return
 
-                if identity == CircuitIdentity.STICK_MULTITARGET:
+                if identity == CircuitIdentity.STICK_MULTITARGET.value:
                     working_optimizers["multi+multi"].optimize_circuit(self.current_circuit)
                     return
 
-                if identity == CircuitIdentity.STICK_MULTITARGET_TO_CNOT:
+                if identity == CircuitIdentity.STICK_MULTITARGET_TO_CNOT.value:
                     working_optimizers["multi+cnot"].optimize_circuit(self.current_circuit)
 
             except Exception as e:
@@ -163,7 +163,7 @@ class CircuitEnvIdent(gym.Env):
             list_index = random.randint(0, len(self.could_apply_on) - 1)
             qubit = self.could_apply_on[list_index][2]
             identity = self.could_apply_on[list_index][0]
-            self.current_action = (identity, qubit, random.randint(0, 1))
+            self.current_action = (identity, qubit.name, random.randint(0, 1))
         else:
             self.current_action = action
             list_index = [index for index, value in enumerate(self.could_apply_on)

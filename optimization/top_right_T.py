@@ -34,7 +34,7 @@ class TopRightT(cirq.PointOptimizer):
 
                     if self.only_count:
                         self.count += 1
-                        self.moment_index.append((CircuitIdentity.T_GATE_RIGHT, index))
+                        self.moment_index.append((CircuitIdentity.T_GATE_RIGHT.value, index))
                         return None
 
                     return cirq.PointOptimizationSummary(

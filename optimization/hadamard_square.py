@@ -54,7 +54,9 @@ class HadamardSquare(cirq.PointOptimizer):
 
                                         if self.only_count:
                                             self.count += 1
-                                            self.moment_index_qubit.append((CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT, index, qubit))
+                                            self.moment_index_qubit.append(
+                                                (CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT.value, index, qubit)
+                                            )
                                             return None
 
                                         return cirq.PointOptimizationSummary(

@@ -52,7 +52,9 @@ class OneHLeftTwoRight(cirq.PointOptimizer):
 
                                     if self.only_count:
                                         self.count += 1
-                                        self.moment_index_qubit.append((CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT, index, qubit))
+                                        self.moment_index_qubit.append(
+                                            (CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT.value, index, qubit)
+                                        )
                                         return None
 
                                     return cirq.PointOptimizationSummary(

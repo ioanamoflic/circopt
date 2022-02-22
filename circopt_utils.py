@@ -241,32 +241,25 @@ def read_and_merge_all(q_tables: List[str], state_maps: List[str], action_maps: 
 
 
 def read_train_data():
-    q_table = np.ndarray([])
-    state_map = dict()
-    action_map = dict()
-
-    try:
-        q_table = np.load('train_data/QTable.npy')
-        file1 = open('train_data/states.txt', 'r')
-        file2 = open('train_data/actions.txt', 'r')
-        state_map = json.load(file1)
-        action_map_json = json.load(file2)
-        action_map = {literal_eval(k): v for k, v in action_map_json.items()}
-    except Exception as e:
-        logging.error(f'Error reading training data! {e}')
+    q_table = np.load('train_data/QTable.npy')
+    file1 = open('train_data/states.txt', 'r')
+    file2 = open('train_data/actions.txt', 'r')
+    state_map = json.load(file1)
+    action_map_json = json.load(file2)
+    action_map = {literal_eval(k): v for k, v in action_map_json.items()}
 
     return q_table, state_map, action_map
 
 
 def write_train_data(q_table, state_map, action_map):
-    try:
-        np.save('train_data/QTable.npy', q_table)
-        with open('train_data/states.txt', 'w') as f1:
-            json.dump(state_map, f1)
-        with open('train_data/actions.txt', 'w') as f2:
-            json.dump({str((k[0].value, k[1].name, k[2])): v for k, v in action_map.items()}, f2)
-    except Exception as e:
-        logging.error(f'Error writing training data! {e}')
+    np.save('train_data/QTable.npy', q_table)
+    with open('train_data/states.txt', 'w') as f1:
+        json.dump(state_map, f1)
+    with open('train_data/actions.txt', 'w') as f2:
+        print(action_map)
+        json.dump({str((k[0], k[1], k[2])): v for k, v in action_map.items()}, f2)
+
+
 
 
 

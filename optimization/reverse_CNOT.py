@@ -24,7 +24,9 @@ class ReverseCNOT(cirq.PointOptimizer):
 
             if self.only_count:
                 self.count += 1
-                self.moment_index_qubit.append((CircuitIdentity.REVERSED_CNOT, index, control))
+                self.moment_index_qubit.append(
+                    (CircuitIdentity.REVERSED_CNOT.value, index, control)
+                )
                 return None
 
             return cirq.PointOptimizationSummary(

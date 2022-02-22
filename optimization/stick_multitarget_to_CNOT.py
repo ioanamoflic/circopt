@@ -48,7 +48,9 @@ class StickMultiTargetToCNOT(cirq.PointOptimizer):
 
                         if self.only_count:
                             self.count += 1
-                            self.moment_index_qubit.append((CircuitIdentity.STICK_MULTITARGET_TO_CNOT, index, control_left))
+                            self.moment_index_qubit.append(
+                                (CircuitIdentity.STICK_MULTITARGET_TO_CNOT.value, index, control_left)
+                            )
                             return None
 
                         setattr(cnot, "allow", False)

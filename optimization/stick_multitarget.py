@@ -52,7 +52,9 @@ class StickMultiTarget(cirq.PointOptimizer):
 
                         if self.only_count:
                             self.count += 1
-                            self.moment_index_qubit.append((CircuitIdentity.STICK_MULTITARGET, index, op.qubits[0]))
+                            self.moment_index_qubit.append(
+                                (CircuitIdentity.STICK_MULTITARGET.value, index, op.qubits[0])
+                            )
                             return None
 
                         setattr(cnot, "allow", False)

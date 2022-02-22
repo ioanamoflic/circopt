@@ -51,7 +51,9 @@ class StickCNOTs(cirq.PointOptimizer):
 
                         if self.only_count:
                             self.count += 1
-                            self.moment_index_qubit.append((CircuitIdentity.STICK_CNOTS, index, op.qubits[0]))
+                            self.moment_index_qubit.append(
+                                (CircuitIdentity.STICK_CNOTS.value, index, op.qubits[0])
+                            )
                             return None
 
                         # remove remaining op (cnot)
