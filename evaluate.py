@@ -125,15 +125,17 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps):
 
 
 def run():
-    test_number = sys.argv[1]
-    steps = sys.argv[2]
+    test_or_train = sys.argv[1]
+    test_number = sys.argv[2]
+    steps = sys.argv[3]
 
     q, a, s = utils.read_train_data()
     test_circuit = None
 
-    for file in os.listdir('./test_circuits'):
-        if fnmatch.fnmatch(file, f'TEST_{test_number}.txt'):
-            f = open(f'test_circuits/TEST_{test_number}.txt', 'r')
+    for file in os.listdir(f'./{test_or_train}_circuits'):
+        if fnmatch.fnmatch(file, f'{test_or_train.upper()}_{test_number}.txt'):
+            print(file)
+            f = open(f'{test_or_train}_circuits/{test_or_train.upper()}_{test_number}.txt', 'r')
             json_string = f.read()
             test_circuit = cirq.read_json(json_text=json_string)
 
