@@ -43,7 +43,7 @@ def make_mp_envs(num_env, seed, circuits, start_idx=0):
 
         return fn
 
-    return SubprocVecEnv([make_env(i + start_idx, circuits[start_idx]) for i in range(num_env)])
+    return SubprocVecEnv([make_env(i + start_idx, circuits[i]) for i in range(num_env)])
 
 
 def run():
@@ -55,9 +55,9 @@ def run():
     circuits = []
     for file in os.listdir('./train_circuits'):
         if fnmatch.fnmatch(file, f'TRAIN_{batch_number}*.txt'):
-            print(file)
             f = open(f'train_circuits/{file}', 'r')
             json_string = f.read()
+            print(file)
             circuits.append(json_string)
 
     vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 8), circuits=circuits)

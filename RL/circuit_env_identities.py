@@ -48,6 +48,30 @@ class CircuitEnvIdent(gym.Env):
         self.max_weight_av = self._get_weighted_av()
         self.min_weight_av = self._get_weighted_av() / 5
 
+        self.counting_optimizers = {
+            "onehleft": OneHLeftTwoRight(only_count=True),
+            "toplefth": TopLeftHadamard(only_count=True),
+            "rerversecnot": ReverseCNOT(only_count=True),
+            "hadamardsquare": HadamardSquare(only_count=True),
+            "cancelcnots": CancelNghCNOTs(only_count=True),
+            "cancelh": CancelNghHadamards(only_count=True),
+            "cnot+cnot": StickCNOTs(only_count=True),
+            "multi+multi": StickMultiTarget(only_count=True),
+            "multi+cnot": StickMultiTargetToCNOT(only_count=True)
+        }
+
+        self.working_optimizers = {
+            "onehleft": OneHLeftTwoRight(),
+            "toplefth": TopLeftHadamard(),
+            "rerversecnot": ReverseCNOT(),
+            "hadamardsquare": HadamardSquare(),
+            "cancelcnots": CancelNghCNOTs(),
+            "cancelh": CancelNghHadamards(),
+            "cnot+cnot": StickCNOTs(),
+            "multi+multi": StickMultiTarget(),
+            "multi+cnot": StickMultiTargetToCNOT()
+        }
+
         # optimizers
         self.drop_empty = cirq.optimizers.DropEmptyMoments()
 
@@ -77,7 +101,7 @@ class CircuitEnvIdent(gym.Env):
         all_possibilities = list()
         identity_state: str = ''
 
-        for opt_circuit in counting_optimizers.values():
+        for opt_circuit in self.counting_optimizers.values():
             opt_circuit.optimize_circuit(self.current_circuit)
             identity_state = identity_state + str(opt_circuit.count) + '_'
             all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
@@ -96,45 +120,45 @@ class CircuitEnvIdent(gym.Env):
             moment = self.could_apply_on[index][1]
             qub = self.could_apply_on[index][2]
 
-            for optimizer in working_optimizers.values():
+            for optimizer in self.working_optimizers.values():
                 optimizer.moment = moment
                 optimizer.qubit = qub
 
             try:
                 if identity == CircuitIdentity.REVERSED_CNOT.value:
-                    working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
+                    self.working_optimizers["rerversecnot"].optimize_circuit(self.current_circuit)
                     return
 
                 if identity == CircuitIdentity.ONE_HADAMARD_UP_LEFT.value:
-                    working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
+                    self.working_optimizers["toplefth"].optimize_circuit(self.current_circuit)
                     return
 
                 if identity == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT.value:
-                    working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
+                    self.working_optimizers["onehleft"].optimize_circuit(self.current_circuit)
                     return
 
                 if identity == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT.value:
-                    working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
+                    self.working_optimizers["hadamardsquare"].optimize_circuit(self.current_circuit)
                     return
 
                 if identity == CircuitIdentity.CANCEL_CNOTS.value:
-                    working_optimizers["cancelcnots"].optimize_circuit(self.current_circuit)
+                    self.working_optimizers["cancelcnots"].optimize_circuit(self.current_circuit)
                     return
 
                 if identity == CircuitIdentity.CANCEL_HADAMARDS.value:
-                    working_optimizers["cancelh"].optimize_circuit(self.current_circuit)
+                    self.working_optimizers["cancelh"].optimize_circuit(self.current_circuit)
                     return
 
                 if identity == CircuitIdentity.STICK_CNOTS.value:
-                    working_optimizers["cnot+cnot"].optimize_circuit(self.current_circuit)
+                    self.working_optimizers["cnot+cnot"].optimize_circuit(self.current_circuit)
                     return
 
                 if identity == CircuitIdentity.STICK_MULTITARGET.value:
-                    working_optimizers["multi+multi"].optimize_circuit(self.current_circuit)
+                    self.working_optimizers["multi+multi"].optimize_circuit(self.current_circuit)
                     return
 
                 if identity == CircuitIdentity.STICK_MULTITARGET_TO_CNOT.value:
-                    working_optimizers["multi+cnot"].optimize_circuit(self.current_circuit)
+                    self.working_optimizers["multi+cnot"].optimize_circuit(self.current_circuit)
 
             except Exception as e:
                 log.info(f'Error during optimization! {e}')
@@ -226,28 +250,3 @@ class CircuitEnvIdent(gym.Env):
             return
         print(f'Chosen action: {self.current_action}')
         print(f'Current circuit depth: {len(self.current_circuit)}')
-
-
-counting_optimizers = {
-    "onehleft": OneHLeftTwoRight(only_count=True),
-    "toplefth": TopLeftHadamard(only_count=True),
-    "rerversecnot": ReverseCNOT(only_count=True),
-    "hadamardsquare": HadamardSquare(only_count=True),
-    "cancelcnots": CancelNghCNOTs(only_count=True),
-    "cancelh": CancelNghHadamards(only_count=True),
-    "cnot+cnot": StickCNOTs(only_count=True),
-    "multi+multi": StickMultiTarget(only_count=True),
-    "multi+cnot": StickMultiTargetToCNOT(only_count=True)
-}
-
-working_optimizers = {
-    "onehleft": OneHLeftTwoRight(),
-    "toplefth": TopLeftHadamard(),
-    "rerversecnot": ReverseCNOT(),
-    "hadamardsquare": HadamardSquare(),
-    "cancelcnots": CancelNghCNOTs(),
-    "cancelh": CancelNghHadamards(),
-    "cnot+cnot": StickCNOTs(),
-    "multi+multi": StickMultiTarget(),
-    "multi+cnot": StickMultiTargetToCNOT()
-}
