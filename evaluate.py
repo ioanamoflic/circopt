@@ -129,7 +129,8 @@ def run():
     test_number = sys.argv[2]
     steps = sys.argv[3]
 
-    q, a, s = utils.read_train_data()
+    q, s, a = utils.read_train_data()
+
     test_circuit = None
 
     for file in os.listdir(f'./{test_or_train}_circuits'):
