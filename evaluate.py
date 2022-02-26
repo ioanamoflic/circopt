@@ -1,78 +1,147 @@
-import circopt_utils
+import copy
+
 import circopt_utils as utils
 import numpy as np
-import global_stuff as globals
 from optimization.optimize_circuits import CircuitIdentity
 from circuits.ioana_random import *
+import sys
+import fnmatch
+import os
+from optimization.reverse_CNOT import ReverseCNOT
+from optimization.hadamard_square import HadamardSquare
+from optimization.top_left_hadamard import TopLeftHadamard
+from optimization.one_H_left_2_right import OneHLeftTwoRight
+from optimization.stick_multitarget_to_CNOT import StickMultiTargetToCNOT
+from optimization.stick_CNOTs import StickCNOTs
+from optimization.stick_multitarget import StickMultiTarget
+from quantify.optimizers.cancel_ngh_cnots import CancelNghCNOTs
+from quantify.optimizers.cancel_ngh_hadamard import CancelNghHadamards
+
+working_optimizers = {
+    "onehleft": OneHLeftTwoRight(),
+    "toplefth": TopLeftHadamard(),
+    "rerversecnot": ReverseCNOT(),
+    "hadamardsquare": HadamardSquare(),
+    "cancelcnots": CancelNghCNOTs(),
+    "cancelh": CancelNghHadamards(),
+    "cnot+cnot": StickCNOTs(),
+    "multi+multi": StickMultiTarget(),
+    "multi+cnot": StickMultiTargetToCNOT()
+}
+
+counting_optimizers = {
+    "onehleft": OneHLeftTwoRight(only_count=True),
+    "toplefth": TopLeftHadamard(only_count=True),
+    "rerversecnot": ReverseCNOT(only_count=True),
+    "hadamardsquare": HadamardSquare(only_count=True),
+    "cancelcnots": CancelNghCNOTs(only_count=True),
+    "cancelh": CancelNghHadamards(only_count=True),
+    "cnot+cnot": StickCNOTs(only_count=True),
+    "multi+multi": StickMultiTarget(only_count=True),
+    "multi+cnot": StickMultiTargetToCNOT(only_count=True)
+}
 
 
-def optimize(test_circuit, Q_Table, state_map, action_map, steps=1):
-    globals.action_map = action_map
-    globals.state_map = state_map
+def sort_tuple_list(tup):
+    tup.sort(key=lambda x: x[1])
+    return tup
+
+
+def get_all_possible_identities(circuit):
+    all_possibilities = []
+    identity_state: str = ''
+
+    for opt_circuit in counting_optimizers.values():
+        opt_circuit.optimize_circuit(circuit)
+        identity_state = identity_state + str(opt_circuit.count) + '_'
+        all_possibilities = all_possibilities + opt_circuit.moment_index_qubit
+
+        opt_circuit.count = 0
+        opt_circuit.moment_index_qubit.clear()
+
+    return sort_tuple_list(all_possibilities), identity_state
+
+
+def optimize(test_circuit, Q_Table, state_map, action_map, steps):
 
     for step in range(steps):
-        apply_on, current_state = circopt_utils.get_all_possible_identities(test_circuit)
+        apply_on, current_state = get_all_possible_identities(test_circuit)
 
-        print(test_circuit)
-
-        if current_state not in globals.state_map.keys():
+        if current_state not in state_map.keys():
+            print('Initial circuit state is not found in QTable :(')
             return test_circuit
 
-        state_index = globals.state_map[current_state]
+        state_index = state_map[current_state]
         best_action = np.argmax(Q_Table[state_index, :])
-        action = utils.get_action_by_value(int(best_action))
+        action = None
 
-        index = [index for index, value in enumerate(apply_on) if value[0].value == action[0] and value[2].name == action[1]]
+        for key, value in action_map.items():
+            if value == best_action:
+                action = key
+
+        index = [index for index, value in enumerate(apply_on)
+                 if value[0].value == action[0] and value[2].name == action[1]]
 
         if len(index) == 0:
             return test_circuit
 
         if len(index) > 0:
-            index = index[0]
-            globals.random_moment = apply_on[index][1]
+            identity = apply_on[index][0]
+            moment = apply_on[index][1]
+            qub = apply_on[index][2]
 
-        if apply_on[index][0] == CircuitIdentity.REVERSED_CNOT:
-            globals.working_optimizers["rerversecnot"].optimize_circuit(test_circuit)
+            for optimizer in working_optimizers.values():
+                optimizer.moment = moment
+                optimizer.qubit = qub
 
-        elif apply_on[index][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT:
-            globals.working_optimizers["toplefth"].optimize_circuit(test_circuit)
+                if identity == CircuitIdentity.REVERSED_CNOT.value:
+                    working_optimizers["rerversecnot"].optimize_circuit(test_circuit)
 
-        elif apply_on[index][0] == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT:
-            globals.working_optimizers["onehleft"].optimize_circuit(test_circuit)
+                elif identity == CircuitIdentity.ONE_HADAMARD_UP_LEFT.value:
+                    working_optimizers["toplefth"].optimize_circuit(test_circuit)
 
-        elif apply_on[index][0] == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT:
-            globals.working_optimizers["hadamardsquare"].optimize_circuit(test_circuit)
+                elif identity == CircuitIdentity.ONE_HADAMARD_LEFT_DOUBLE_RIGHT.value:
+                    working_optimizers["onehleft"].optimize_circuit(test_circuit)
 
-        test_circuit = circopt_utils.exhaust_optimization(test_circuit)
+                elif identity == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT.value:
+                    working_optimizers["hadamardsquare"].optimize_circuit(test_circuit)
+
+                elif identity == CircuitIdentity.CANCEL_CNOTS.value:
+                    working_optimizers["cancelcnots"].optimize_circuit(test_circuit)
+
+                elif identity == CircuitIdentity.CANCEL_HADAMARDS.value:
+                    working_optimizers["cancelh"].optimize_circuit(test_circuit)
+
+                elif identity == CircuitIdentity.STICK_CNOTS.value:
+                    working_optimizers["cnot+cnot"].optimize_circuit(test_circuit)
+
+                elif identity == CircuitIdentity.STICK_MULTITARGET.value:
+                    working_optimizers["multi+multi"].optimize_circuit(test_circuit)
+
+                elif identity == CircuitIdentity.STICK_MULTITARGET_TO_CNOT.value:
+                    working_optimizers["multi+cnot"].optimize_circuit(test_circuit)
 
     return test_circuit
 
 
 def run():
-    q_tables = ['train_data/CR_0_QTable.npy', 'train_data/CR_1_QTable.npy',
-                'train_data/CR_2_QTable.npy', 'train_data/CR_3_QTable.npy', 'train_data/CR_4_QTable.npy']
+    test_number = sys.argv[1]
+    steps = sys.argv[2]
 
-    action_maps = ['train_data/CR_0_Action_Map.txt', 'train_data/CR_1_Action_Map.txt',
-                   'train_data/CR_2_Action_Map.txt', 'train_data/CR_3_Action_Map.txt',
-                   'train_data/CR_4_Action_Map.txt']
+    q, a, s = utils.read_train_data()
+    test_circuit = None
 
-    state_maps = ['train_data/CR_0_State_Map.txt', 'train_data/CR_1_State_Map.txt',
-                  'train_data/CR_2_State_Map.txt', 'train_data/CR_3_State_Map.txt',
-                  'train_data/CR_4_State_Map.txt']
+    for file in os.listdir('./test_circuits'):
+        if fnmatch.fnmatch(file, f'TEST_{test_number}.txt'):
+            f = open(f'test_circuits/TEST_{test_number}.txt', 'r')
+            json_string = f.read()
+            test_circuit = cirq.read_json(json_text=json_string)
 
-    # final_q_table, final_state_map, final_action_map = utils.read_and_merge_all(q_tables, state_maps, action_maps)
+    test = copy.deepcopy(test_circuit)
 
-    final_q_table, final_state_map, final_action_map = utils.read_train_data('train_data/test_circ_QTable.npy',
-                                                                             'train_data/test_circ_Action_Map.txt',
-                                                                             'train_data/test_circ_State_Map.txt')
-
-    # test_file = 'test.txt'
-    # f = open(test_file, 'r')
-    # json_string = f.read()
-    # test_circuit = cirq.read_json(json_text=json_string)
-
-    optimized_circuit = optimize(get_test_circuit(), final_q_table, final_state_map, final_action_map)
-    utils.plot_optimization_result(get_test_circuit(), optimized_circuit)
+    if test_circuit is not None:
+        optimized_circuit = optimize(test, q, s, a, steps=int(steps))
+        utils.plot_optimization_result(test, optimized_circuit)
 
 
 if __name__ == '__main__':

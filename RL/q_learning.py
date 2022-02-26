@@ -1,5 +1,4 @@
 import csv
-import logging
 
 import numpy as np
 import circopt_utils
@@ -50,9 +49,6 @@ class QAgent:
                 self.Q_table = np.vstack((self.Q_table, np.zeros(self.Q_table.shape[1])))
 
         for e in range(self.n_episodes):
-
-            logging.info(f'Episode: {e}')
-
             current_states = self.env.reset()
             mean_len = 0
             mean_gate_count = 0

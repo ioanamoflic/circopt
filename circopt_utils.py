@@ -128,6 +128,9 @@ def plot_optimization_result(initial_circuit: cirq.Circuit, final_circuit: cirq.
     initial_length = len(cirq.Circuit(initial_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST))
     final_length = len(cirq.Circuit(final_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST))
 
+    print("Initial length: ", initial_length)
+    print("Final length: ", final_length)
+
     initial_gate_count: int = 0
     for moment in initial_circuit:
         initial_gate_count += len(moment)
@@ -135,6 +138,9 @@ def plot_optimization_result(initial_circuit: cirq.Circuit, final_circuit: cirq.
     final_gate_count: int = 0
     for moment in final_circuit:
         final_gate_count += len(moment)
+
+    print("Initial gate count: ", initial_gate_count)
+    print("Final gate count: ", final_gate_count)
 
     values = [initial_length, final_length, initial_gate_count, final_gate_count]
     names = ['Initial length', 'Final length', 'Initial gate count', 'Final gate count']
@@ -164,80 +170,6 @@ def plot_reward_function():
     ax.set_title('Reward function behaviour')
     fig.savefig('reward3D.png', dpi=300)
     #plt.show()
-
-#  -------------------------------------------------- TEST UTILS --------------------------------------------------
-
-
-def merge(q_table_1: np.ndarray, q_table_2: np.ndarray, state_map_1: dict, state_map_2: dict, action_map_1: dict,
-          action_map_2: dict) -> Tuple[Union[ndarray, ndarray], Dict[Any, int], Dict[Any, int]]:
-    merged_actions = set(list(action_map_1.keys()) + list(action_map_2.keys()))
-    merged_states = set(list(state_map_1.keys()) + list(state_map_2.keys()))
-
-    merged_qt: np.ndarray = np.zeros((len(merged_states), len(merged_actions)))
-    merged_action_map = dict()
-    merged_state_map = dict()
-
-    for action in merged_actions:
-        merged_action_map[action] = len(merged_action_map)
-
-    for state in merged_states:
-        merged_state_map[state] = len(merged_state_map)
-
-    for state in merged_states:
-        if state in state_map_1.keys() and state in state_map_2.keys():
-            q_table_1_line_index = state_map_1[state]
-            q_table_2_line_index = state_map_2[state]
-
-            for action in merged_actions:
-                if action in action_map_1.keys() and action in action_map_2.keys():
-                    q_table_1_col_index = action_map_1[action]
-                    q_table_2_col_index = action_map_2[action]
-                    merged_qt[merged_state_map[state], merged_action_map[action]] = (q_table_1[
-                                                                       q_table_1_line_index, q_table_1_col_index] +
-                                                                   q_table_2[
-                                                                       q_table_2_line_index, q_table_2_col_index]) / 2.0
-
-                elif action in action_map_1.keys() and action not in action_map_2.keys():
-                    q_table_1_col_index = action_map_1[action]
-                    merged_qt[merged_state_map[state], merged_action_map[action]] = q_table_1[q_table_1_line_index, q_table_1_col_index]
-
-                elif action in action_map_2.keys() and action not in action_map_1.keys():
-                    q_table_2_col_index = action_map_2[action]
-                    merged_qt[merged_state_map[state], merged_action_map[action]] = q_table_2[q_table_2_line_index, q_table_2_col_index]
-
-        elif state in state_map_1.keys() and state not in state_map_2.keys():
-            q_table_1_line_index = state_map_1[state]
-
-            for action in merged_actions:
-                if action in action_map_1.keys():
-                    q_table_1_col_index = action_map_1[action]
-                    merged_qt[merged_state_map[state], merged_action_map[action]] = q_table_1[q_table_1_line_index, q_table_1_col_index]
-
-        elif state in state_map_2.keys() and state not in state_map_1.keys():
-            q_table_2_line_index = state_map_2[state]
-
-            for action in merged_actions:
-                if action in action_map_2.keys():
-                    q_table_2_col_index = action_map_2[action]
-                    merged_qt[merged_state_map[state], merged_action_map[action]] = q_table_2[q_table_2_line_index, q_table_2_col_index]
-
-    return merged_qt, merged_state_map, merged_action_map
-
-
-def read_and_merge_all(q_tables: List[str], state_maps: List[str], action_maps: List[str]):
-    assert len(q_tables) == len(state_maps) == len(action_maps)
-
-    final_q_table, final_state_map, final_action_map = read_train_data(q_tables[0], action_maps[0], state_maps[0])
-
-    for i in range(1, len(q_tables)):
-        current_q_table, current_state_map, current_action_map = read_train_data(q_tables[i], action_maps[i],
-                                                                                 state_maps[i])
-
-        final_q_table, final_state_map, final_action_map = merge(final_q_table, current_q_table, final_state_map,
-                                                                 current_state_map, final_action_map,
-                                                                 current_action_map)
-
-    return final_q_table, final_state_map, final_action_map
 
 
 def read_train_data():

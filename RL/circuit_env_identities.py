@@ -5,7 +5,6 @@ import numpy as np
 import cirq
 import quantify.utils.misc_utils as mu
 from optimization.optimize_circuits import CircuitIdentity
-import logging
 import copy
 import random
 from optimization.reverse_CNOT import ReverseCNOT
@@ -17,9 +16,15 @@ from optimization.stick_CNOTs import StickCNOTs
 from optimization.stick_multitarget import StickMultiTarget
 from quantify.optimizers.cancel_ngh_cnots import CancelNghCNOTs
 from quantify.optimizers.cancel_ngh_hadamard import CancelNghHadamards
+from logging import getLogger, INFO
+from concurrent_log_handler import ConcurrentRotatingFileHandler
+import os
 
-
-logging.basicConfig(filename='logfile.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
+log = getLogger(__name__)
+logfile = os.path.abspath("./logfile.log")
+rotateHandler = ConcurrentRotatingFileHandler(logfile, "a", 512*1024, 5)
+log.addHandler(rotateHandler)
+log.setLevel(INFO)
 
 
 class CircuitEnvIdent(gym.Env):
@@ -132,7 +137,7 @@ class CircuitEnvIdent(gym.Env):
                     working_optimizers["multi+cnot"].optimize_circuit(self.current_circuit)
 
             except Exception as e:
-                logging.error(f'Error during optimization! {e}')
+                log.info(f'Error during optimization! {e}')
 
     def _get_circuit_degree(self) -> np.ndarray:
         degrees = np.zeros(len(self.current_circuit.all_qubits()))
@@ -188,8 +193,7 @@ class CircuitEnvIdent(gym.Env):
                         * np.log(1 + self.min_weight_av / current_weight_av))
 
         # reward, max_degree, current_degree, max_len, current_len, min_w_av, current_w_av
-        logging.info(msg=f'{reward},{self.max_degree},{current_degree},{self.max_len},'
-                         f'{current_len},{self.min_weight_av},{current_weight_av}')
+        log.info(f'{reward},{self.max_degree},{current_degree},{self.max_len},{current_len},{self.min_weight_av},{current_weight_av}')
 
         self.max_len = max(self.max_len, current_len)
         self.max_gate_count = max(self.max_gate_count, current_gate_count)
@@ -213,7 +217,6 @@ class CircuitEnvIdent(gym.Env):
         self.current_circuit = copy.deepcopy(self.starting_circuit)
         self.done = False
         self.could_apply_on, identity_int_string = self._get_all_possible_identities()
-        logging.info(msg="Environment reset")
 
         return identity_int_string
 
