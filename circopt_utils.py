@@ -188,7 +188,6 @@ def write_train_data(q_table, state_map, action_map):
     with open('train_data/states.txt', 'w') as f1:
         json.dump(state_map, f1)
     with open('train_data/actions.txt', 'w') as f2:
-        print(action_map)
         json.dump({str((k[0], k[1], k[2])): v for k, v in action_map.items()}, f2)
 
 
