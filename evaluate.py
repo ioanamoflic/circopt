@@ -62,13 +62,25 @@ def get_all_possible_identities(circuit):
     return sort_tuple_list(all_possibilities), identity_state
 
 
+def _get_gate_count(circuit) -> int:
+    counter: int = 0
+    for moment in circuit:
+        counter += len(moment)
+    return counter
+
+
 def optimize(test_circuit, Q_Table, state_map, action_map, steps):
+    initial_circuit = copy.deepcopy(test_circuit)
 
     for step in range(steps):
         apply_on, current_state = get_all_possible_identities(test_circuit)
 
+        print(f'Step {step}: ', current_state, len(cirq.Circuit(test_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)),
+              _get_gate_count(circuit=test_circuit))
+
         if current_state not in state_map.keys():
-            print('Initial circuit state is not found in QTable :(')
+            print('State not found in QT: ', current_state)
+            utils.plot_optimization_result(initial_circuit, test_circuit)
             return test_circuit
 
         state_index = state_map[current_state]
@@ -83,6 +95,8 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps):
                  if value[0] == action[0] and value[2].name == action[1]]
 
         if len(index) == 0:
+            print('No identity match found for current circuit.')
+            utils.plot_optimization_result(initial_circuit, test_circuit)
             return test_circuit
 
         if len(index) > 0:
@@ -132,20 +146,18 @@ def run():
 
     q, s, a = utils.read_train_data()
 
+    print('--------------------- Results ---------------------')
     test_circuit = None
 
     for file in os.listdir(f'./{test_or_train}_circuits'):
         if fnmatch.fnmatch(file, f'{test_or_train.upper()}_{test_number}.txt'):
-            print(file)
+            print('Loading circuit from: ', file)
             f = open(f'{test_or_train}_circuits/{test_or_train.upper()}_{test_number}.txt', 'r')
             json_string = f.read()
             test_circuit = cirq.read_json(json_text=json_string)
 
-    test = copy.deepcopy(test_circuit)
-
     if test_circuit is not None:
-        optimized_circuit = optimize(test, q, s, a, steps=int(steps))
-        utils.plot_optimization_result(test, optimized_circuit)
+        optimized_circuit = optimize(test_circuit, q, s, a, steps=int(steps))
 
 
 if __name__ == '__main__':
