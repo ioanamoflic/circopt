@@ -86,6 +86,7 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps):
             return test_circuit
 
         if len(index) > 0:
+            index = index[0]
             identity = apply_on[index][0]
             moment = apply_on[index][1]
             qub = apply_on[index][2]
