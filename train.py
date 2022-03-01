@@ -47,7 +47,7 @@ def make_mp_envs(num_env, seed, circuits, start_idx=0):
 
 
 def run():
-    ep = 3000
+    ep = 3500
     batch_number = sys.argv[1]
 
     random.seed(0)
@@ -57,16 +57,16 @@ def run():
         if fnmatch.fnmatch(file, f'TRAIN_{batch_number}*.txt'):
             f = open(f'train_circuits/{file}', 'r')
             json_string = f.read()
-            print(file)
             circuits.append(json_string)
 
-    vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 8), circuits=circuits)
-    agent = QAgent(vec_env, n_ep=ep, max_iter=75, lr=0.01, gamma=0.97)
+    circuits = circuits + circuits
+    vec_env = make_mp_envs(num_env=14, seed=random.randint(0, 15), circuits=circuits)
+    agent = QAgent(vec_env, n_ep=ep, max_iter=200, lr=0.01, gamma=0.97)
     agent.train()
     filename = f'test.csv'
     agent.show_evolution(filename=filename, bvz_bits=15, ep=ep)
 
-    circopt_utils.plot_reward_function()
+    # circopt_utils.plot_reward_function()
 
 
 if __name__ == '__main__':
