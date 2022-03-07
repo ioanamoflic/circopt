@@ -92,7 +92,9 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps):
                 action = key
 
         index = [index for index, value in enumerate(apply_on)
-                 if value[0] == action[0] and value[2].name == action[1]]
+                 if value[0] == action[0]
+                 and value[1] // 10 == action[1]
+                 and value[2].name == action[2]]
 
         if len(index) == 0:
             print('No identity match found for current circuit.')

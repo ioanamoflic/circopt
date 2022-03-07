@@ -22,7 +22,7 @@ import os
 
 log = getLogger(__name__)
 logfile = os.path.abspath("./logfile.log")
-rotateHandler = ConcurrentRotatingFileHandler(logfile, "a", 512*1024, 5)
+rotateHandler = ConcurrentRotatingFileHandler(logfile, "a")
 log.addHandler(rotateHandler)
 log.setLevel(INFO)
 
@@ -33,9 +33,11 @@ class CircuitEnvIdent(gym.Env):
     """
     CNOT_WEIGHT = 5.0
     H_WEIGHT = 1.5
+    MOMENT_RANGE = 10
 
-    def __init__(self, starting_circuit: cirq.Circuit):
+    def __init__(self, starting_circuit: cirq.Circuit, circuit_name):
         super(CircuitEnvIdent, self).__init__()
+        self.circuit_name = circuit_name
         self.current_action: Tuple[int, int, int] = (0, 0, 0)
         self.starting_circuit: cirq.Circuit = starting_circuit
         self.current_circuit: cirq.Circuit = copy.deepcopy(self.starting_circuit)
@@ -189,16 +191,19 @@ class CircuitEnvIdent(gym.Env):
         if action == 'random':
             list_index = random.randint(0, len(self.could_apply_on) - 1)
             qubit = self.could_apply_on[list_index][2]
+            moment = self.could_apply_on[list_index][1]
             identity = self.could_apply_on[list_index][0]
-            self.current_action = (identity, qubit.name, random.randint(0, 1))
+            self.current_action = (identity, moment // self.MOMENT_RANGE, qubit.name, random.randint(0, 1))
         else:
             self.current_action = action
             list_index = [index for index, value in enumerate(self.could_apply_on)
-                          if value[0] == self.current_action[0] and value[2].name == self.current_action[1]]
+                          if value[0] == self.current_action[0]
+                          and value[1] // self.MOMENT_RANGE == self.current_action[1]
+                          and value[2].name == self.current_action[2]]
 
-            list_index = list_index[0] if len(list_index) > 0 else -1
+            list_index = list_index[random.randint(0, len(list_index) - 1)] if len(list_index) > 0 else -1
 
-        self._apply_identity(self.current_action[2], index=list_index)
+        self._apply_identity(self.current_action[3], index=list_index)
         self.drop_empty.optimize_circuit(self.current_circuit)
 
         current_degree = self._get_circuit_degree()
@@ -217,7 +222,7 @@ class CircuitEnvIdent(gym.Env):
                         * np.log(1 + self.min_weight_av / current_weight_av))
 
         # reward, max_degree, current_degree, max_len, current_len, min_w_av, current_w_av
-        log.info(f'{reward},{self.max_degree},{current_degree},{self.max_len},{current_len},{self.min_weight_av},{current_weight_av}')
+        log.info(f'{reward},{self.max_degree},{current_degree},{self.max_len},{current_len},{self.min_weight_av},{current_weight_av},{self.circuit_name}')
 
         self.max_len = max(self.max_len, current_len)
         self.max_gate_count = max(self.max_gate_count, current_gate_count)
