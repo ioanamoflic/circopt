@@ -70,6 +70,7 @@ def run():
                         f = open(f'train_circuits/{file}', 'r')
                         json_string = f.read()
                         circuits.append((json_string, file))
+                        f.close()
 
                 vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=p)
                 agent = QAgent(vec_env, n_ep=ep, max_iter=150, lr=0.01, gamma=0.97, expl_decay=e)
