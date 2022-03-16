@@ -5,6 +5,7 @@ from circuits.ioana_random import *
 import sys
 import fnmatch
 import os
+import circopt_utils as utils
 
 
 def benchmark_parallelisation():
@@ -32,11 +33,11 @@ def benchmark_parallelisation():
     return
 
 
-def make_mp_envs(num_env, seed, circuits, start_idx=0):
+def make_mp_envs(num_env, seed, circuits, moment_range=10, start_idx=0):
     def make_env(rank, circuit):
         def fn():
             starting_circuit = cirq.read_json(json_text=circuit[0])
-            env = CircuitEnvIdent(starting_circuit, circuit[1])
+            env = CircuitEnvIdent(starting_circuit, circuit[1], moment_range)
             env.seed(seed + rank)
             return env
 
@@ -46,24 +47,44 @@ def make_mp_envs(num_env, seed, circuits, start_idx=0):
 
 
 def run():
-    ep = 3000
+    # ep = 3000
     batch_number = sys.argv[1]
     random.seed(0)
 
-    circuits = []
-    for file in os.listdir('./train_circuits'):
-        if fnmatch.fnmatch(file, f'TRAIN_{batch_number}*.txt'):
-            f = open(f'train_circuits/{file}', 'r')
-            json_string = f.read()
-            circuits.append((json_string, file))
+    episodes = [3, 5, 7, 10, 20, 100, 5000]
+    partition_size = [3, 5, 7, 10, 20, 100, 150]
+    exp_rates = [0.0001, 0.0005, 0.001, 0.002, 0.005, 0.1, 0.9]
 
-    vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits)
-    agent = QAgent(vec_env, n_ep=ep, max_iter=150, lr=0.01, gamma=0.97)
-    agent.train()
-    filename = f'test.csv'
-    agent.show_evolution(filename=filename, bvz_bits=15, ep=ep)
+    Q_Table_actions = []
+    Q_Table_states = []
+    eps = []
+    parts = []
+    exps = []
+
+    for ep in episodes:
+        for p in partition_size:
+            for e in exp_rates:
+                circuits = []
+                for file in os.listdir('./train_circuits'):
+                    if fnmatch.fnmatch(file, f'TRAIN_{batch_number}*.txt'):
+                        f = open(f'train_circuits/{file}', 'r')
+                        json_string = f.read()
+                        circuits.append((json_string, file))
+
+                vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=p)
+                agent = QAgent(vec_env, n_ep=ep, max_iter=150, lr=0.01, gamma=0.97, expl_decay=e)
+                agent.train()
+                filename = f'test.csv'
+                Q_Table_states.append(agent.Q_table.shape[0])
+                Q_Table_actions.append(agent.Q_table.shape[1])
+                eps.append(ep)
+                parts.append(p)
+                exps.append(e)
+                # agent.show_evolution(filename=filename, bvz_bits=15, ep=ep)
 
     # circopt_utils.plot_reward_function()
+    utils.plot_qt_size(eps, parts, exps, Q_Table_states, 's')
+    utils.plot_qt_size(eps, parts, exps, Q_Table_actions, 'a')
 
 
 if __name__ == '__main__':

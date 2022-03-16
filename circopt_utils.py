@@ -172,6 +172,29 @@ def plot_reward_function():
     #plt.show()
 
 
+def plot_qt_size(x, y, z, colors, s:str):
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+
+    print(x)
+    print(y)
+    print(z)
+    print(colors)
+    ax.set_xlabel('Episodes')
+    ax.set_ylabel('Partition size')
+    ax.set_zlabel('Exp. Rates')
+
+    ax.scatter(x, y, z, c=np.array(colors)/255, cmap='viridis', linewidth=0.5)
+
+    ax.set_title('QTable size')
+    if s == 'a':
+        fig.savefig('qt3D_actions.png', dpi=300)
+    else:
+        fig.savefig('qt3D_states.png', dpi=300)
+
+   # plt.show()
+
+
 def read_train_data():
     q_table = np.load('train_data/QTable_2.npy')
     file1 = open('train_data/states_2.txt', 'r')

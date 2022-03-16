@@ -33,11 +33,11 @@ class CircuitEnvIdent(gym.Env):
     """
     CNOT_WEIGHT = 5.0
     H_WEIGHT = 1.5
-    MOMENT_RANGE = 10
 
-    def __init__(self, starting_circuit: cirq.Circuit, circuit_name):
+    def __init__(self, starting_circuit: cirq.Circuit, circuit_name, moment_range):
         super(CircuitEnvIdent, self).__init__()
         self.circuit_name = circuit_name
+        self.moment_range = moment_range
         self.current_action: Tuple[int, int, int] = (0, 0, 0)
         self.starting_circuit: cirq.Circuit = starting_circuit
         self.current_circuit: cirq.Circuit = copy.deepcopy(self.starting_circuit)
@@ -193,12 +193,12 @@ class CircuitEnvIdent(gym.Env):
             qubit = self.could_apply_on[list_index][2]
             moment = self.could_apply_on[list_index][1]
             identity = self.could_apply_on[list_index][0]
-            self.current_action = (identity, moment // self.MOMENT_RANGE, qubit.name, random.randint(0, 1))
+            self.current_action = (identity, moment // self.moment_range, qubit.name, random.randint(0, 1))
         else:
             self.current_action = action
             list_index = [index for index, value in enumerate(self.could_apply_on)
                           if value[0] == self.current_action[0]
-                          and value[1] // self.MOMENT_RANGE == self.current_action[1]
+                          and value[1] // self.moment_range == self.current_action[1]
                           and value[2].name == self.current_action[2]]
 
             list_index = list_index[random.randint(0, len(list_index) - 1)] if len(list_index) > 0 else -1

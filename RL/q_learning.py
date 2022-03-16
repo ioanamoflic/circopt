@@ -105,7 +105,7 @@ class QAgent:
             self.final_gc_per_episode.append(mean_gate_count)
             self.final_len_per_episode.append(mean_len)
 
-            circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
+             # circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
 
     def show_evolution(self, filename: str = '3bits.csv', bvz_bits: int = 3, ep: int = 8000) -> None:
         """
