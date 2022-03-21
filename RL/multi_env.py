@@ -120,6 +120,7 @@ def worker(remote, parent_remote, env_fn):
 
         elif cmd == 'reset':
             ob = env.reset()
+            env.ep += 1
             remote.send(ob)
 
         elif cmd == 'close':

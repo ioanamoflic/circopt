@@ -175,11 +175,6 @@ def plot_reward_function():
 def plot_qt_size(x, y, z, colors, s:str):
     fig = plt.figure()
     ax = plt.axes(projection='3d')
-
-    print(x)
-    print(y)
-    print(z)
-    print(colors)
     ax.set_xlabel('Episodes')
     ax.set_ylabel('Partition size')
     ax.set_zlabel('Exp. Rates')
@@ -188,9 +183,9 @@ def plot_qt_size(x, y, z, colors, s:str):
 
     ax.set_title('QTable size')
     if s == 'a':
-        fig.savefig('qt3D_actions.png', dpi=300)
+        fig.savefig('train_plots/qt3D_actions.png', dpi=300)
     else:
-        fig.savefig('qt3D_states.png', dpi=300)
+        fig.savefig('train_plots/qt3D_states.png', dpi=300)
 
    # plt.show()
 

@@ -36,6 +36,7 @@ class CircuitEnvIdent(gym.Env):
 
     def __init__(self, starting_circuit: cirq.Circuit, circuit_name, moment_range):
         super(CircuitEnvIdent, self).__init__()
+        self.ep = 0
         self.circuit_name = circuit_name
         self.moment_range = moment_range
         self.current_action: Tuple[int, int, int] = (0, 0, 0)
@@ -221,8 +222,8 @@ class CircuitEnvIdent(gym.Env):
         reward = np.exp((1 + (self.max_degree / current_degree) * (self.max_len / current_len))
                         * np.log(1 + self.min_weight_av / current_weight_av))
 
-        # reward, max_degree, current_degree, max_len, current_len, min_w_av, current_w_av
-        log.info(f'{reward},{self.max_degree},{current_degree},{self.max_len},{current_len},{self.min_weight_av},{current_weight_av},{self.circuit_name}')
+        # e, reward, max_degree, current_degree, max_len, current_len, min_w_av, current_w_av
+        log.info(f'{self.ep},{reward},{self.max_degree},{current_degree},{self.max_len},{current_len},{self.min_weight_av},{current_weight_av},{self.circuit_name}')
 
         self.max_len = max(self.max_len, current_len)
         self.max_gate_count = max(self.max_gate_count, current_gate_count)

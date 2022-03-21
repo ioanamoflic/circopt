@@ -39,6 +39,7 @@ def make_mp_envs(num_env, seed, circuits, moment_range=10, start_idx=0):
             starting_circuit = cirq.read_json(json_text=circuit[0])
             env = CircuitEnvIdent(starting_circuit, circuit[1], moment_range)
             env.seed(seed + rank)
+            env.ep = -1
             return env
 
         return fn
@@ -47,7 +48,7 @@ def make_mp_envs(num_env, seed, circuits, moment_range=10, start_idx=0):
 
 
 def run():
-    # ep = 3000
+    ep = 3000
     batch_number = sys.argv[1]
     random.seed(0)
 
@@ -61,21 +62,21 @@ def run():
     parts = []
     exps = []
 
+    circuits = []
+    for file in os.listdir('./train_circuits'):
+        if fnmatch.fnmatch(file, f'TRAIN_{batch_number}*.txt'):
+            f = open(f'train_circuits/{file}', 'r')
+            json_string = f.read()
+            circuits.append((json_string, file))
+            f.close()
+
     for ep in episodes:
         for p in partition_size:
             for e in exp_rates:
-                circuits = []
-                for file in os.listdir('./train_circuits'):
-                    if fnmatch.fnmatch(file, f'TRAIN_{batch_number}*.txt'):
-                        f = open(f'train_circuits/{file}', 'r')
-                        json_string = f.read()
-                        circuits.append((json_string, file))
-                        f.close()
-
-                vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=p)
-                agent = QAgent(vec_env, n_ep=ep, max_iter=150, lr=0.01, gamma=0.97, expl_decay=e)
+                vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=10)
+                agent = QAgent(vec_env, n_ep=ep, max_iter=10, lr=0.01, gamma=0.97, expl_decay=0.0008)
                 agent.train()
-                filename = f'test.csv'
+                # filename = f'test.csv'
                 Q_Table_states.append(agent.Q_table.shape[0])
                 Q_Table_actions.append(agent.Q_table.shape[1])
                 eps.append(ep)
@@ -83,7 +84,6 @@ def run():
                 exps.append(e)
                 # agent.show_evolution(filename=filename, bvz_bits=15, ep=ep)
 
-    # circopt_utils.plot_reward_function()
     utils.plot_qt_size(eps, parts, exps, Q_Table_states, 's')
     utils.plot_qt_size(eps, parts, exps, Q_Table_actions, 'a')
 
