@@ -74,7 +74,7 @@ def run():
         for p in partition_size:
             for e in exp_rates:
                 vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=10)
-                agent = QAgent(vec_env, n_ep=ep, max_iter=10, lr=0.01, gamma=0.97, expl_decay=0.0008)
+                agent = QAgent(vec_env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97, expl_decay=0.0008)
                 agent.train()
                 # filename = f'test.csv'
                 Q_Table_states.append(agent.Q_table.shape[0])
