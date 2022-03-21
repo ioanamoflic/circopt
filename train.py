@@ -52,16 +52,6 @@ def run():
     batch_number = sys.argv[1]
     random.seed(0)
 
-    episodes = [3, 5, 7, 10, 20, 100, 5000]
-    partition_size = [3, 5, 7, 10, 20, 100, 150]
-    exp_rates = [0.0001, 0.0005, 0.001, 0.002, 0.005, 0.1, 0.9]
-
-    Q_Table_actions = []
-    Q_Table_states = []
-    eps = []
-    parts = []
-    exps = []
-
     circuits = []
     for file in os.listdir('./train_circuits'):
         if fnmatch.fnmatch(file, f'TRAIN_{batch_number}*.txt'):
@@ -70,22 +60,12 @@ def run():
             circuits.append((json_string, file))
             f.close()
 
-    for ep in episodes:
-        for p in partition_size:
-            for e in exp_rates:
-                vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=10)
-                agent = QAgent(vec_env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97, expl_decay=0.0008)
-                agent.train()
-                # filename = f'test.csv'
-                Q_Table_states.append(agent.Q_table.shape[0])
-                Q_Table_actions.append(agent.Q_table.shape[1])
-                eps.append(ep)
-                parts.append(p)
-                exps.append(e)
-                # agent.show_evolution(filename=filename, bvz_bits=15, ep=ep)
+    vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=5)
+    agent = QAgent(vec_env, n_ep=ep, max_iter=150, lr=0.01, gamma=0.97, expl_decay=0.0008)
+    agent.train()
 
-    utils.plot_qt_size(eps, parts, exps, Q_Table_states, 's')
-    utils.plot_qt_size(eps, parts, exps, Q_Table_actions, 'a')
+    # utils.plot_qt_size(eps, parts, exps, Q_Table_states, 's')
+    # utils.plot_qt_size(eps, parts, exps, Q_Table_actions, 'a')
 
 
 if __name__ == '__main__':
