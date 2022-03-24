@@ -14,6 +14,7 @@ from optimization.stick_CNOTs import StickCNOTs
 from optimization.stick_multitarget import StickMultiTarget
 from quantify.optimizers.cancel_ngh_cnots import CancelNghCNOTs
 from quantify.optimizers.cancel_ngh_hadamard import CancelNghHadamards
+import numpy as np
 
 working_optimizers = {
     "onehleft": OneHLeftTwoRight(),
