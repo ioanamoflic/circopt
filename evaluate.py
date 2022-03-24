@@ -5,6 +5,7 @@ from circuits.ioana_random import *
 import sys
 import fnmatch
 import os
+from optimization.optimize_circuits import CircuitIdentity
 from optimization.reverse_CNOT import ReverseCNOT
 from optimization.hadamard_square import HadamardSquare
 from optimization.top_left_hadamard import TopLeftHadamard
