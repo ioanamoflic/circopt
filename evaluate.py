@@ -1,8 +1,6 @@
 import copy
 
 import circopt_utils as utils
-import numpy as np
-from optimization.optimize_circuits import CircuitIdentity
 from circuits.ioana_random import *
 import sys
 import fnmatch
@@ -91,18 +89,26 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps):
             if value == best_action:
                 action = key
 
-        index = [index for index, value in enumerate(apply_on)
+        print(f'Best action index: {best_action}, best action: {action}')
+        print(apply_on)
+
+        index_list = [index for index, value in enumerate(apply_on)
                  if value[0] == action[0]
-                 and value[1] // 10 == action[1]
+                 and value[1] // 5 == action[1]
                  and value[2].name == action[2]]
 
-        if len(index) == 0:
+        print('Index list: ', index_list)
+
+        for index in index_list:
+            print('Match: ', apply_on[index])
+
+        if len(index_list) == 0:
             print('No identity match found for current circuit.')
             utils.plot_optimization_result(initial_circuit, test_circuit)
             return test_circuit
 
-        if len(index) > 0:
-            index = index[0]
+        if len(index_list) > 0:
+            index = index_list[0]
             identity = apply_on[index][0]
             moment = apply_on[index][1]
             qub = apply_on[index][2]
@@ -142,8 +148,8 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps):
 
 
 def run():
-    test_or_train = sys.argv[1]
-    test_number = sys.argv[2]
+    filename = sys.argv[1]
+    test_or_train = sys.argv[2]
     steps = sys.argv[3]
 
     q, s, a = utils.read_train_data()
@@ -152,9 +158,9 @@ def run():
     test_circuit = None
 
     for file in os.listdir(f'./{test_or_train}_circuits'):
-        if fnmatch.fnmatch(file, f'{test_or_train.upper()}_{test_number}.txt'):
+        if fnmatch.fnmatch(file, f'{filename}'):
             print('Loading circuit from: ', file)
-            f = open(f'{test_or_train}_circuits/{test_or_train.upper()}_{test_number}.txt', 'r')
+            f = open(f'{test_or_train}_circuits/{filename}', 'r')
             json_string = f.read()
             test_circuit = cirq.read_json(json_text=json_string)
 
