@@ -145,7 +145,7 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps):
 
         index_list = [index for index, value in enumerate(apply_on)
                  if value[0] == action[0]
-                 and value[1] // 5 == action[1]
+                 and value[1] // 10 == action[1]
                  and value[2].name == action[2]]
 
         print('Index list: ', index_list)
