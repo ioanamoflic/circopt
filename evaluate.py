@@ -29,6 +29,20 @@ working_optimizers = {
     "multi+cnot": StickMultiTargetToCNOT()
 }
 
+
+counting_moments_optimizers = {
+            "onehleft": OneHLeftTwoRight(count_between=True),
+            "toplefth": TopLeftHadamard(count_between=True),
+            "rerversecnot": ReverseCNOT(count_between=True),
+            "hadamardsquare": HadamardSquare(count_between=True),
+            "cancelcnots": CancelNghCNOTs(count_between=True),
+            "cancelh": CancelNghHadamards(count_between=True),
+            "cnot+cnot": StickCNOTs(count_between=True),
+            "multi+multi": StickMultiTarget(count_between=True),
+            "multi+cnot": StickMultiTargetToCNOT(count_between=True)
+}
+
+
 counting_optimizers = {
     "onehleft": OneHLeftTwoRight(only_count=True),
     "toplefth": TopLeftHadamard(only_count=True),
@@ -40,6 +54,37 @@ counting_optimizers = {
     "multi+multi": StickMultiTarget(only_count=True),
     "multi+cnot": StickMultiTargetToCNOT(only_count=True)
 }
+
+drop_empty = cirq.optimizers.DropEmptyMoments()
+
+
+def _get_observation(circuit, moment_range):
+    observation: str = ''
+    circuit_length = len(circuit)
+    i = 0
+
+    while i < circuit_length:
+        start_moment = i
+        end_moment = i + moment_range
+
+        if end_moment > circuit_length:
+            end_moment = circuit_length - 1
+
+        i = end_moment + 1
+
+        bit = ''
+        for opt_circuit in counting_moments_optimizers.values():
+            opt_circuit.start_moment = start_moment
+            opt_circuit.end_moment = end_moment
+            opt_circuit.optimize_circuit(circuit)
+            bit = bit + str(opt_circuit.count) + '_'
+
+            opt_circuit.count = 0
+            opt_circuit.moment_index_qubit.clear()
+
+        observation = observation + bit + '|'
+
+    return observation
 
 
 def sort_tuple_list(tup):
@@ -73,10 +118,14 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps):
     initial_circuit = copy.deepcopy(test_circuit)
 
     for step in range(steps):
+        print(test_circuit)
         apply_on, current_state = get_all_possible_identities(test_circuit)
+        # current_state = _get_observation(circuit=test_circuit, moment_range=2)
 
-        print(f'Step {step}: ', current_state, len(cirq.Circuit(test_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST)),
-              _get_gate_count(circuit=test_circuit))
+        print(f'Step {step}')
+        print(f'State {current_state}')
+        print(f'Gate count {_get_gate_count(circuit=test_circuit)}')
+        print(f'Length: {len(cirq.Circuit(test_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST))}')
 
         if current_state not in state_map.keys():
             print('State not found in QT: ', current_state)
@@ -145,6 +194,10 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps):
 
                 elif identity == CircuitIdentity.STICK_MULTITARGET_TO_CNOT.value:
                     working_optimizers["multi+cnot"].optimize_circuit(test_circuit)
+
+        drop_empty.optimize_circuit(test_circuit)
+
+    utils.plot_optimization_result(initial_circuit, test_circuit)
 
     return test_circuit
 
