@@ -30,17 +30,17 @@ working_optimizers = {
 }
 
 
-counting_moments_optimizers = {
-            "onehleft": OneHLeftTwoRight(count_between=True),
-            "toplefth": TopLeftHadamard(count_between=True),
-            "rerversecnot": ReverseCNOT(count_between=True),
-            "hadamardsquare": HadamardSquare(count_between=True),
-            "cancelcnots": CancelNghCNOTs(count_between=True),
-            "cancelh": CancelNghHadamards(count_between=True),
-            "cnot+cnot": StickCNOTs(count_between=True),
-            "multi+multi": StickMultiTarget(count_between=True),
-            "multi+cnot": StickMultiTargetToCNOT(count_between=True)
-}
+# counting_moments_optimizers = {
+#             "onehleft": OneHLeftTwoRight(count_between=True),
+#             "toplefth": TopLeftHadamard(count_between=True),
+#             "rerversecnot": ReverseCNOT(count_between=True),
+#             "hadamardsquare": HadamardSquare(count_between=True),
+#             "cancelcnots": CancelNghCNOTs(count_between=True),
+#             "cancelh": CancelNghHadamards(count_between=True),
+#             "cnot+cnot": StickCNOTs(count_between=True),
+#             "multi+multi": StickMultiTarget(count_between=True),
+#             "multi+cnot": StickMultiTargetToCNOT(count_between=True)
+# }
 
 
 counting_optimizers = {
@@ -58,33 +58,33 @@ counting_optimizers = {
 drop_empty = cirq.optimizers.DropEmptyMoments()
 
 
-def _get_observation(circuit, moment_range):
-    observation: str = ''
-    circuit_length = len(circuit)
-    i = 0
-
-    while i < circuit_length:
-        start_moment = i
-        end_moment = i + moment_range
-
-        if end_moment > circuit_length:
-            end_moment = circuit_length - 1
-
-        i = end_moment + 1
-
-        bit = ''
-        for opt_circuit in counting_moments_optimizers.values():
-            opt_circuit.start_moment = start_moment
-            opt_circuit.end_moment = end_moment
-            opt_circuit.optimize_circuit(circuit)
-            bit = bit + str(opt_circuit.count) + '_'
-
-            opt_circuit.count = 0
-            opt_circuit.moment_index_qubit.clear()
-
-        observation = observation + bit + '|'
-
-    return observation
+# def _get_observation(circuit, moment_range):
+#     observation: str = ''
+#     circuit_length = len(circuit)
+#     i = 0
+#
+#     while i < circuit_length:
+#         start_moment = i
+#         end_moment = i + moment_range
+#
+#         if end_moment > circuit_length:
+#             end_moment = circuit_length - 1
+#
+#         i = end_moment + 1
+#
+#         bit = ''
+#         for opt_circuit in counting_moments_optimizers.values():
+#             opt_circuit.start_moment = start_moment
+#             opt_circuit.end_moment = end_moment
+#             opt_circuit.optimize_circuit(circuit)
+#             bit = bit + str(opt_circuit.count) + '_'
+#
+#             opt_circuit.count = 0
+#             opt_circuit.moment_index_qubit.clear()
+#
+#         observation = observation + bit + '|'
+#
+#     return observation
 
 
 def sort_tuple_list(tup):
