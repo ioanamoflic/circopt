@@ -5,7 +5,6 @@ from circuits.ioana_random import *
 import sys
 import fnmatch
 import os
-import circopt_utils as utils
 
 
 def benchmark_parallelisation():
@@ -51,6 +50,7 @@ def run():
     ep = 3000
     file_prefix = sys.argv[1]
     batch_number = sys.argv[2]
+    moment_range = sys.argv[3]
     random.seed(0)
 
     circuits = []
@@ -61,8 +61,8 @@ def run():
             circuits.append((json_string, file))
             f.close()
 
-    vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=5)
-    agent = QAgent(vec_env, n_ep=ep, max_iter=50, lr=0.01, gamma=0.97, expl_decay=0.001)
+    vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=int(moment_range))
+    agent = QAgent(vec_env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97, expl_decay=0.001)
     agent.train()
 
     # utils.plot_qt_size(eps, parts, exps, Q_Table_states, 's')

@@ -24,7 +24,7 @@ class QAgentSingleCore:
         self.Q_table = np.zeros((2, 2))
         self.state_map = dict()
         self.action_map = dict()
-        circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
+        #circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
 
         # self.Q_table, self.state_map, self.action_map = circopt_utils.read_train_data()
 
@@ -42,7 +42,7 @@ class QAgentSingleCore:
 
             current_len: int = 0
             total_episode_reward: float = 0.0
-            # print('Episode', e)
+            print('Episode', e)
 
             for i in range(self.max_iter_episode):
                 if np.random.uniform(0, 1) <= self.exploration_proba:

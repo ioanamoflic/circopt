@@ -78,18 +78,18 @@ def get_each_identity(circuit_identity, qubit1, qubit2):
 
 
 class CircuitIdentity(Enum):
-    DOUBLE_HADAMARD_LEFT = auto()
-    DOUBLE_HADAMARD_RIGHT = auto()
-    DOUBLE_HADAMARD_UP = auto()
-    DOUBLE_HADAMARD_DOWN = auto()
-    DOUBLE_HADAMARD_LEFT_RIGHT = auto()
-    REVERSED_CNOT = auto()
-    ONE_HADAMARD_UP_LEFT = auto()
-    ONE_HADAMARD_LEFT_DOUBLE_RIGHT = auto()
-    T_GATE_LEFT = auto()
-    T_GATE_RIGHT = auto()
-    STICK_CNOTS = auto()
-    CANCEL_HADAMARDS = auto()
-    CANCEL_CNOTS = auto()
-    STICK_MULTITARGET = auto()
-    STICK_MULTITARGET_TO_CNOT = auto()
+    DOUBLE_HADAMARD_LEFT = 1
+    DOUBLE_HADAMARD_RIGHT = 2
+    DOUBLE_HADAMARD_UP = 3
+    DOUBLE_HADAMARD_DOWN = 4
+    DOUBLE_HADAMARD_LEFT_RIGHT = 5
+    REVERSED_CNOT = 6
+    ONE_HADAMARD_UP_LEFT = 7
+    ONE_HADAMARD_LEFT_DOUBLE_RIGHT = 8
+    T_GATE_LEFT = 9
+    T_GATE_RIGHT = 10
+    STICK_CNOTS = 11
+    CANCEL_HADAMARDS = 12
+    CANCEL_CNOTS = 13
+    STICK_MULTITARGET = 14
+    STICK_MULTITARGET_TO_CNOT = 15

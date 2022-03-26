@@ -63,6 +63,18 @@ class CircuitEnvIdent(gym.Env):
             "multi+cnot": StickMultiTargetToCNOT(only_count=True)
         }
 
+        self.counting_moments_optimizers = {
+            "onehleft": OneHLeftTwoRight(count_between=True),
+            "toplefth": TopLeftHadamard(count_between=True),
+            "rerversecnot": ReverseCNOT(count_between=True),
+            "hadamardsquare": HadamardSquare(count_between=True),
+            "cancelcnots": CancelNghCNOTs(count_between=True),
+            "cancelh": CancelNghHadamards(count_between=True),
+            "cnot+cnot": StickCNOTs(count_between=True),
+            "multi+multi": StickMultiTarget(count_between=True),
+            "multi+cnot": StickMultiTargetToCNOT(count_between=True)
+        }
+
         self.working_optimizers = {
             "onehleft": OneHLeftTwoRight(),
             "toplefth": TopLeftHadamard(),
@@ -113,6 +125,34 @@ class CircuitEnvIdent(gym.Env):
             opt_circuit.moment_index_qubit.clear()
 
         return self.sort_tuple_list(all_possibilities), identity_state
+
+    def _get_observation(self):
+        observation: str = ''
+        circuit_length = len(self.current_circuit)
+        i = 0
+
+        while i < circuit_length:
+            start_moment = i
+            end_moment = i + self.moment_range
+
+            if end_moment > circuit_length:
+                end_moment = circuit_length - 1
+
+            i = end_moment + 1
+
+            bit = ''
+            for opt_circuit in self.counting_moments_optimizers.values():
+                opt_circuit.start_moment = start_moment
+                opt_circuit.end_moment = end_moment
+                opt_circuit.optimize_circuit(self.current_circuit)
+                bit = bit + str(opt_circuit.count) + '_'
+
+                opt_circuit.count = 0
+                opt_circuit.moment_index_qubit.clear()
+
+            observation = observation + bit + '|'
+
+        return observation
 
     def _apply_identity(self, action: int, index: int):
         if action == 0 or index == -1:
@@ -190,12 +230,14 @@ class CircuitEnvIdent(gym.Env):
         # 1. ---------------- Update the environment state based on the chosen action ----------------
 
         if action == 'random':
+            #print('Random action')
             list_index = random.randint(0, len(self.could_apply_on) - 1)
             qubit = self.could_apply_on[list_index][2]
             moment = self.could_apply_on[list_index][1]
             identity = self.could_apply_on[list_index][0]
             self.current_action = (identity, moment // self.moment_range, qubit.name, random.randint(0, 1))
         else:
+            #print('Not random action')
             self.current_action = action
             list_index = [index for index, value in enumerate(self.could_apply_on)
                           if value[0] == self.current_action[0]
@@ -204,8 +246,13 @@ class CircuitEnvIdent(gym.Env):
 
             list_index = list_index[random.randint(0, len(list_index) - 1)] if len(list_index) > 0 else -1
 
+        # print('Chosen action: ', self.current_action)
+        #print('Circuit before:\n', self.current_circuit)
+
         self._apply_identity(self.current_action[3], index=list_index)
         self.drop_empty.optimize_circuit(self.current_circuit)
+
+        #print('Circuit after:\n', self.current_circuit)
 
         current_degree = self._get_circuit_degree()
         current_len: int = self._len_move_to_left()
@@ -222,6 +269,8 @@ class CircuitEnvIdent(gym.Env):
         reward = np.exp((1 + (self.max_degree / current_degree) * (self.max_len / current_len))
                         * np.log(1 + self.min_weight_av / current_weight_av))
 
+        # print('Reward: ', reward)
+
         # e, reward, max_degree, current_degree, max_len, current_len, min_w_av, current_w_av
         log.info(f'{self.ep},{reward},{self.max_degree},{current_degree},{self.max_len},{current_len},{self.min_weight_av},{current_weight_av},{self.circuit_name}')
 
@@ -233,22 +282,26 @@ class CircuitEnvIdent(gym.Env):
 
         # 3. ---------------- Store the new "observation" for the state (Identity config) ----------------
 
-        self.could_apply_on, identity_int_string = self._get_all_possible_identities()
+        self.could_apply_on, _ = self._get_all_possible_identities()
+        observation = self._get_observation()
+        info["state"] = observation
 
         if len(self.could_apply_on) == 0:
             self.done = True
 
-        observation = identity_int_string
-        info["state"] = observation
+        #print('State: ', observation)
 
         return observation, reward, self.done, info
 
     def reset(self):
+        self.ep += 1
         self.current_circuit = copy.deepcopy(self.starting_circuit)
         self.done = False
-        self.could_apply_on, identity_int_string = self._get_all_possible_identities()
+        self.could_apply_on, _ = self._get_all_possible_identities()
+        # self.could_apply_on = self._get_all_possible_identities()
 
-        return identity_int_string
+        return self._get_observation()
+        # return identity_int_string
 
     def render(self, mode='human', close=False):
         if self.current_action == (0, 0, 0):

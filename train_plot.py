@@ -17,6 +17,37 @@ def plot_reward():
                        'Episodes', 'Reward', f'train_plots/episodes_{filename}.png')
 
 
+def plot_qt_size():
+    df = pd.read_csv("logfile_QTable.log", sep=',', header=0)
+    x = df.iloc[:, 0].values
+    y = df.iloc[:, 1].values
+    z = df.iloc[:, 2].values
+    states = df.iloc[:, 3].values
+    actions = df.iloc[:, 4].values
+
+    fig = plt.figure(figsize=(12, 6))
+
+    ax = fig.add_subplot(1, 2, 1, projection='3d')
+    ax.set_xlabel('Episodes')
+    ax.set_ylabel('Partition size')
+    ax.set_zlabel('No. steps')
+    f1 = ax.scatter(x, y, z, c=np.array(states), cmap='viridis', linewidth=0.5)
+    plt.colorbar(f1)
+    ax.set_title('States')
+
+    ax = fig.add_subplot(1, 2, 2, projection='3d')
+    ax.set_xlabel('Episodes')
+    ax.set_ylabel('Partition size')
+    ax.set_zlabel('No. steps')
+    f2 = ax.scatter(x, y, z, c=np.array(actions), cmap='viridis', linewidth=0.5)
+    plt.colorbar(f2)
+    ax.set_title('Actions')
+
+    plt.tight_layout()
+
+    plt.show()
+
+
 def plot_training_for_circuit():
     filename = sys.argv[1]
     columns = ['e', 'reward', 'max_degree', 'current_degree', 'max_len', 'current_len', 'min_w_av', 'current_w_av', 'filename']

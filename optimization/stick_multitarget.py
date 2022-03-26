@@ -4,15 +4,22 @@ from optimization.optimize_circuits import CircuitIdentity
 
 
 class StickMultiTarget(cirq.PointOptimizer):
-    def __init__(self, moment=None, qubit=None, only_count=False):
+    def __init__(self, moment=None, qubit=None, only_count=False, count_between=False):
         super().__init__()
         self.only_count = only_count
         self.count = 0
         self.moment_index_qubit = []
         self.moment = moment
         self.qubit = qubit
+        self.start_moment = 0
+        self.end_moment = 0
+        self.count_between = count_between
 
     def optimization_at(self, circuit, index, op):
+
+        if self.count_between and not (self.start_moment <= index <= self.end_moment):
+            return None
+
         if (index != self.moment or op.qubits[0] != self.qubit) and not self.only_count:
             return None
 
@@ -49,6 +56,10 @@ class StickMultiTarget(cirq.PointOptimizer):
                         gate = cirq.ParallelGate(cirq.X, len(targets[1:]))
                         c_op = gate.controlled().on(*targets)
                         new_op = [c_op]
+
+                        if self.count_between:
+                            self.count += 1
+                            return None
 
                         if self.only_count:
                             self.count += 1

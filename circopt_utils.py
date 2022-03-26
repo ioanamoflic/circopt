@@ -191,9 +191,9 @@ def plot_qt_size(x, y, z, colors, s:str):
 
 
 def read_train_data():
-    q_table = np.load('train_data/QTable_2.npy')
-    file1 = open('train_data/states_2.txt', 'r')
-    file2 = open('train_data/actions_2.txt', 'r')
+    q_table = np.load('train_data/QTable_3.npy')
+    file1 = open('train_data/states_3.txt', 'r')
+    file2 = open('train_data/actions_3.txt', 'r')
     state_map = json.load(file1)
     action_map_json = json.load(file2)
     action_map = {literal_eval(k): v for k, v in action_map_json.items()}
@@ -202,10 +202,10 @@ def read_train_data():
 
 
 def write_train_data(q_table, state_map, action_map):
-    np.save('train_data/QTable_2.npy', q_table)
-    with open('train_data/states_2.txt', 'w') as f1:
+    np.save('train_data/QTable_3.npy', q_table)
+    with open('train_data/states_3.txt', 'w') as f1:
         json.dump(state_map, f1)
-    with open('train_data/actions_2.txt', 'w') as f2:
+    with open('train_data/actions_3.txt', 'w') as f2:
         json.dump({str((k[0], k[1], k[2], k[3])): v for k, v in action_map.items()}, f2)
 
 

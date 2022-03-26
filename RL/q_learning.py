@@ -26,8 +26,9 @@ class QAgent:
         self.Q_table = np.zeros((2, 2))
         self.state_map = dict()
         self.action_map = dict()
+        circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
 
-        #self.Q_table, self.state_map, self.action_map = circopt_utils.read_train_data()
+        self.Q_table, self.state_map, self.action_map = circopt_utils.read_train_data()
 
     def get_action_list(self, actions):
         action_list = []
@@ -105,7 +106,7 @@ class QAgent:
             self.final_gc_per_episode.append(mean_gate_count)
             self.final_len_per_episode.append(mean_len)
 
-             # circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
+            circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
 
     def show_evolution(self, filename: str = '3bits.csv', bvz_bits: int = 3, ep: int = 8000) -> None:
         """
