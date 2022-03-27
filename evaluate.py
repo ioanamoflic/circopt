@@ -206,7 +206,7 @@ def run():
     filename = sys.argv[1]
     test_or_train = sys.argv[2]
     steps = sys.argv[3]
-    moment_range = [4]
+    moment_range = sys.argv[4]
 
     q, s, a = utils.read_train_data()
 
@@ -221,8 +221,8 @@ def run():
             test_circuit = cirq.read_json(json_text=json_string)
 
     if test_circuit is not None:
-        optimized_circuit = optimize(test_circuit, q, s, a, steps=int(steps), moment_range=moment_range)
+        optimized_circuit = optimize(test_circuit, q, s, a, steps=int(steps), moment_range=int(moment_range))
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     run()
