@@ -280,7 +280,7 @@ class AmbiguousEnv(gym.Env):
 
         # 2. ---------------- Calculate the "reward" for the new state of the circuit ----------------
         reward = 100
-        if current_degree * current_len * current_weight_av is not 0:
+        if current_degree * current_len * current_weight_av != 0:
             reward = np.exp((1 + (self.max_degree / current_degree) * (self.max_len / current_len))
                             * np.log(1 + self.min_weight_av / current_weight_av))
 

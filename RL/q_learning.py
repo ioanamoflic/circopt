@@ -26,7 +26,7 @@ class QAgent:
         self.Q_table = np.zeros((2, 2))
         self.state_map = dict()
         self.action_map = dict()
-        circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
+        #circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
 
         self.Q_table, self.state_map, self.action_map = circopt_utils.read_train_data()
 
