@@ -302,7 +302,7 @@ class AmbiguousEnv(gym.Env):
         # 3. ---------------- Store the new "observation" for the state (Identity config) ----------------
 
         self.could_apply_on, observation = self._get_all_possible_identities()
-        print(self.could_apply_on)
+        #print(self.could_apply_on)
         #observation = self._get_observation()
         info["state"] = observation
 
