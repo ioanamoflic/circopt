@@ -29,17 +29,11 @@ stick_to_cnot = StickMultiTargetToCNOT()
 
 #  -------------------------------------------------- TRAIN UTILS --------------------------------------------------
 
+
 def to_str(config: List[int]) -> str:
     current_config_as_string: str = "".join(
         [chr(ord('0') + config[i]) for i in range(len(config))])
     return current_config_as_string
-
-
-def get_unique_representation(circuit) -> str:
-    n_circuit = cirq.Circuit(circuit, strategy=cirq.InsertStrategy.EARLIEST)
-    str_repr = str(n_circuit)
-    # TODO: Alexandru maybe sha-1?
-    return str_repr
 
 
 def moment_has_toffoli(moment: cirq.Moment) -> bool:
@@ -62,16 +56,16 @@ def optimize(circuit):
     return circuit
 
 
-def exhaust_optimization(circuit):
-    prev_circ_repr: str = ""
-    curr_circ_repr: str = get_unique_representation(circuit)
-
-    while prev_circ_repr != curr_circ_repr:
-        prev_circ_repr = curr_circ_repr
-        circuit = optimize(circuit)
-        curr_circ_repr = get_unique_representation(circuit)
-
-    return circuit
+# def exhaust_optimization(circuit):
+#     prev_circ_repr: str = ""
+#     curr_circ_repr: str = get_unique_representation(circuit)
+#
+#     while prev_circ_repr != curr_circ_repr:
+#         prev_circ_repr = curr_circ_repr
+#         circuit = optimize(circuit)
+#         curr_circ_repr = get_unique_representation(circuit)
+#
+#     return circuit
 
 #  -------------------------------------------------- PLOT UTILS --------------------------------------------------
 
@@ -191,9 +185,9 @@ def plot_qt_size(x, y, z, colors, s:str):
 
 
 def read_train_data():
-    q_table = np.load('train_data/QTable_3.npy')
-    file1 = open('train_data/states_3.txt', 'r')
-    file2 = open('train_data/actions_3.txt', 'r')
+    q_table = np.load('train_data/QTable_tiles.npy')
+    file1 = open('train_data/states_tiles.txt', 'r')
+    file2 = open('train_data/actions_tiles.txt', 'r')
     state_map = json.load(file1)
     action_map_json = json.load(file2)
     action_map = {literal_eval(k): v for k, v in action_map_json.items()}
@@ -202,10 +196,10 @@ def read_train_data():
 
 
 def write_train_data(q_table, state_map, action_map):
-    np.save('train_data/QTable_3.npy', q_table)
-    with open('train_data/states_3.txt', 'w') as f1:
+    np.save('train_data/QTable_tiles.npy', q_table)
+    with open('train_data/states_tiles.txt', 'w') as f1:
         json.dump(state_map, f1)
-    with open('train_data/actions_3.txt', 'w') as f2:
+    with open('train_data/actions_tiles.txt', 'w') as f2:
         json.dump({str((k[0], k[1], k[2], k[3])): v for k, v in action_map.items()}, f2)
 
 

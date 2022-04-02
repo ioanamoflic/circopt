@@ -2,7 +2,7 @@ import random
 import numpy as np
 import cirq
 from cirq import InsertStrategy
-
+import quantify.utils.misc_utils as mu
 from optimization.optimize_circuits import CircuitIdentity
 from optimization.reverse_CNOT import ReverseCNOT
 from optimization.hadamard_square import HadamardSquare
@@ -13,6 +13,7 @@ from optimization.stick_CNOTs import StickCNOTs
 from optimization.stick_multitarget import StickMultiTarget
 from quantify.optimizers.cancel_ngh_cnots import CancelNghCNOTs
 from quantify.optimizers.cancel_ngh_hadamard import CancelNghHadamards
+
 
 counting_optimizers = {
     "onehleft": OneHLeftTwoRight(only_count=True),
@@ -57,8 +58,9 @@ def add_random_H(circuit: cirq.Circuit, qubits):
 
 
 def add_random_H_pair(circuit: cirq.Circuit, qubits):
-    circuit.append([cirq.H.on(qubits[random.randint(0, len(qubits) - 1)])], strategy=cirq.InsertStrategy.NEW)
-    circuit.append([cirq.H.on(qubits[random.randint(0, len(qubits) - 1)])], strategy=cirq.InsertStrategy.NEW)
+    qubit = qubits[random.randint(0, len(qubits) - 1)]
+    circuit.append([cirq.H.on(qubit)], strategy=cirq.InsertStrategy.NEW)
+    circuit.append([cirq.H.on(qubit)], strategy=cirq.InsertStrategy.NEW)
 
     return circuit
 
@@ -67,13 +69,88 @@ def add_random_CNOT_pair(circuit: cirq.Circuit, qubits):
     control = qubits[random.randint(0, len(qubits) - 1)]
     target = qubits[random.randint(0, len(qubits) - 1)]
 
-    while control == target:
+    while control.name == target.name:
         target = qubits[random.randint(0, len(qubits) - 1)]
 
     circuit.append([cirq.CNOT.on(control, target)], strategy=cirq.InsertStrategy.NEW)
     circuit.append([cirq.CNOT.on(control, target)], strategy=cirq.InsertStrategy.NEW)
 
     return circuit
+
+
+def add_random_H_square_pair(circuit: cirq.Circuit, qubits):
+    control = qubits[random.randint(0, len(qubits) - 1)]
+    target = qubits[random.randint(0, len(qubits) - 1)]
+
+    while control == target:
+        target = qubits[random.randint(0, len(qubits) - 1)]
+
+    m1 = [cirq.H.on(control), cirq.H.on(target)]
+    m2 = [cirq.CNOT.on(target, control)]
+    m3 = [cirq.H.on(control), cirq.H.on(target)]
+
+    circuit.append(m1, strategy=cirq.InsertStrategy.NEW)
+    circuit.append(m2, strategy=cirq.InsertStrategy.NEW)
+    circuit.append(m3, strategy=cirq.InsertStrategy.NEW)
+
+    return circuit
+
+
+def generate_circuit_tile():
+    # generates a random circuit with 3 qubits and 5 moments
+    circuit = cirq.Circuit()
+    qubits = [cirq.NamedQubit(str(i)) for i in range(3)]
+
+    for _ in range(10):
+        if random.randint(0, 1) == 0:
+            circuit = add_random_CNOT(circuit, qubits)
+        else:
+            circuit = add_random_H(circuit, qubits)
+
+    print(circuit)
+    return circuit
+
+
+def create_dummy_test_circuit(batch_number: int):
+    file_prefix = 'TILE_'
+    final_circuit = cirq.Circuit()
+
+    for i in range(batch_number, batch_number + 10):
+        circuit = get_circuit(file_prefix + str(i) + '.txt')
+        operations_to_insert = circuit.all_operations()
+        for op in operations_to_insert:
+            final_circuit.append(op, strategy=InsertStrategy.NEW)
+
+    return final_circuit
+
+
+def create_test_circuit(batch_number, qubits: int = 100):
+    file_prefix = 'TILE_'
+    final_circuit = cirq.Circuit()
+
+    for i in range(batch_number, batch_number + 4):
+        circuit = get_circuit(file_prefix + str(i) + '.txt')
+        print('Circuit:')
+        print(circuit)
+        operations_to_insert = circuit.all_operations()
+        # q_rand = random.sample(range(1, qubits), 3)
+        q_rand = random.sample(range(1, qubits), 3)
+        q_rand.sort()
+        print('Random qubits:')
+        print(q_rand)
+
+        for op in operations_to_insert:
+            if mu.my_isinstance(op, cirq.CNOT):
+                control_name = str(q_rand[int(op.qubits[0].name)])
+                target_name = str(q_rand[int(op.qubits[1].name)])
+                final_circuit.append(
+                    [cirq.CNOT.on(control=cirq.NamedQubit(control_name), target=cirq.NamedQubit(target_name))],
+                    strategy=InsertStrategy.NEW)
+            elif mu.my_isinstance(op, cirq.H):
+                qub = str(q_rand[int(op.qubits[0].name)])
+                final_circuit.append([cirq.H.on(cirq.NamedQubit(qub))], strategy=InsertStrategy.NEW)
+
+    return final_circuit
 
 
 def get_random_circuit(nr_qubits: int, big_o_const: int):
@@ -93,22 +170,34 @@ def get_random_circuit(nr_qubits: int, big_o_const: int):
     return circuit
 
 
-def get_dummy_circuit(nr_qubits: int, big_o_const: int):
+def get_random_optimizable_train_circuit(nr_qubits: int):
     qubits = [cirq.NamedQubit(str(i)) for i in range(nr_qubits)]
     circuit = cirq.Circuit()
 
-    degree = 2
-    total_depth = big_o_const * nr_qubits
-    for i in range(total_depth):
-        if random.randint(1, 10) <= 4:
+    for i in range(5):
+        random_value = random.randint(1, 100)
+        if random_value <= 30:
             circuit = add_random_CNOT_pair(circuit, qubits)
-        elif random.randint(1, 10) == 5 or random.randint(1, 10) == 6:
+        elif 31 < random_value < 51:
             circuit = add_random_H(circuit, qubits)
             circuit = add_random_CNOT(circuit, qubits)
+            circuit = add_random_H_square_pair(circuit, qubits)
         else:
             circuit = add_random_H_pair(circuit, qubits)
 
     return circuit
+
+
+def get_random_optimizable_test_circuit(nr_qubits: int, size: int):
+    test_circuit = cirq.Circuit()
+
+    for i in range(size):
+        circuit = get_random_optimizable_train_circuit(nr_qubits=nr_qubits)
+        operations_to_insert = circuit.all_operations()
+        for op in operations_to_insert:
+            test_circuit.append(op, strategy=InsertStrategy.NEW)
+
+    return test_circuit
 
 
 def get_test_circuit():
@@ -152,63 +241,33 @@ def save_starting_circuit():
     return circuit
 
 
-def get_starting_circuit():
-    f = open(f'train_circuits/start.txt', 'r')
+def get_circuit(filename: str):
+    f = open(f'train_circuits/{filename}', 'r')
     json = f.read()
     f.close()
     circuit = cirq.read_json(json_text=json)
     return circuit
 
 
-def generate_start_bench():
-    circuit = get_starting_circuit()
-    last_stop = 0
-
-    for i in range(8):
-
-        if last_stop >= len(circuit):
-            last_stop = 0
-
-        could_apply_on, _ = get_all_possible_identities(circuit)
-        for j in range(len(could_apply_on)):
-
-            if could_apply_on[j][0] == CircuitIdentity.REVERSED_CNOT.value and could_apply_on[j][1] >= last_stop:
-                last_stop = could_apply_on[j][1] + 2
-                working_optimizers["rerversecnot"].moment = could_apply_on[j][1]
-                working_optimizers["rerversecnot"].qubit = could_apply_on[j][2]
-                working_optimizers["rerversecnot"].optimize_circuit(circuit)
-                f = open(f'train_circuits/START_0{i}.txt', 'w')
-                json_string = cirq.to_json(circuit)
-                f.write(json_string)
-                f.close()
-                break
-
-            if could_apply_on[j][0] == CircuitIdentity.ONE_HADAMARD_UP_LEFT.value and could_apply_on[j][1] >= last_stop:
-                last_stop = could_apply_on[j][1] + 2
-                working_optimizers["toplefth"].moment = could_apply_on[j][1]
-                working_optimizers["toplefth"].qubit = could_apply_on[j][2]
-                working_optimizers["toplefth"].optimize_circuit(circuit)
-                f = open(f'train_circuits/START_0{i}.txt', 'w')
-                json_string = cirq.to_json(circuit)
-                f.write(json_string)
-                f.close()
-                break
-
-    return circuit
-
-
 def generate_test_and_train():
-    for i in range(30):
+    for i in range(1000):
         # CK_unopt = get_random_circuit(nr_qubits=10, big_o_const=i//10+1)
-        CK = get_dummy_circuit(nr_qubits=10, big_o_const=i//10+1)
-        # ? CK_opt = circopt_utils.exhaust_optimization(CK_unopt)
+        # CK = get_dummy_circuit(nr_qubits=10, big_o_const=i//10+1)
+        # CK_opt = circopt_utils.exhaust_optimization(CK_unopt)
         # CK_opt = apply_random_identities(CK_unopt)
+        CK = get_random_optimizable_train_circuit(nr_qubits=5)
+        f = open(f'train_circuits/OPT_{i}.txt', 'w')
+        json_string = cirq.to_json(CK)
+        f.write(json_string)
+        f.close()
 
-        if 6 < i % 10 < 10:
-            f = open(f'test_circuits/BASIC_TEST_{i}.txt', 'w')
-        else:
-            f = open(f'train_circuits/BASIC_TRAIN_{i}.txt', 'w')
-
+    for i in range(100):
+        # CK_unopt = get_random_circuit(nr_qubits=10, big_o_const=i//10+1)
+        # CK = get_dummy_circuit(nr_qubits=10, big_o_const=i//10+1)
+        # CK_opt = circopt_utils.exhaust_optimization(CK_unopt)
+        # CK_opt = apply_random_identities(CK_unopt)
+        CK = get_random_optimizable_test_circuit(nr_qubits=5, size=60)
+        f = open(f'test_circuits/OPT_{i}.txt', 'w')
         json_string = cirq.to_json(CK)
         f.write(json_string)
         f.close()

@@ -1,4 +1,4 @@
-from RL.circuit_env_identities import CircuitEnvIdent
+from RL.ambiguous_env import AmbiguousEnv
 from RL.q_learning_single_core import QAgentSingleCore
 from circuits.ioana_random import *
 import sys
@@ -14,13 +14,9 @@ log.setLevel(INFO)
 
 
 def run():
-    ep = 3000
+    ep = 2000
     filename = sys.argv[1]
     moment_range = sys.argv[2]
-
-    f = open(f'train_circuits/{filename}', 'r')
-    json_string = f.read()
-    f.close()
 
     # episodes = [3, 5, 7, 10, 20, 50, 100, 500, 750, 1000]
     # partition_size = [3, 5, 7, 10, 15, 20, 30, 60, 80, 100]
@@ -38,6 +34,7 @@ def run():
     # starting_circuit = cirq.read_json(json_text=json_string)
 
     # starting_circuit = random.get_dummy_circuit(10, 1)
+
     f = open(f'train_circuits/{filename}', 'r')
     json_string = f.read()
     f.close()
@@ -45,12 +42,12 @@ def run():
     starting_circuit = cirq.read_json(json_text=json_string)
 
     print(starting_circuit)
-    env = CircuitEnvIdent(starting_circuit, filename, moment_range=moment_range)
-    agent = QAgentSingleCore(env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97, expl_decay=0.001)
+    env = AmbiguousEnv(starting_circuit, filename, moment_range=int(moment_range))
+    agent = QAgentSingleCore(env, n_ep=ep, max_iter=50, lr=0.01, gamma=0.97, expl_decay=0.001)
     agent.train()
 
     agent.show_evolution(filename='evolution.png', ep=ep)
-                #filename = f'test.csv'
+                # filename = f'test.csv'
 
     #             Q_Table_states.append(agent.Q_table.shape[0])
     #             Q_Table_actions.append(agent.Q_table.shape[1])

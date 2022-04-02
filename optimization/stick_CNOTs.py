@@ -16,18 +16,19 @@ class StickCNOTs(cirq.PointOptimizer):
         self.count_between = count_between
 
     def optimization_at(self, circuit, index, op):
+
         if self.count_between and (index < self.start_moment or index > self.end_moment):
             return None
 
-        if (index != self.moment or op.qubits[0] != self.qubit) and not self.only_count and not self.count_between:
-            return None
-
-        if hasattr(op, "allow"):
+        if hasattr(op, "allow") and not self.only_count and not self.count_between:
             return cirq.PointOptimizationSummary(
                 clear_span=1,
                 clear_qubits=op.qubits,
                 new_operations=[]
             )
+
+        if (index != self.moment or op.qubits[0] != self.qubit) and not self.only_count and not self.count_between:
+            return None
 
         if mu.my_isinstance(op, cirq.CNOT):
             next_op_index = circuit.next_moment_operating_on([op.qubits[0]], start_moment_index=index + 1)

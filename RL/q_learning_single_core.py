@@ -1,5 +1,5 @@
 import numpy as np
-from RL.circuit_env_identities import CircuitEnvIdent
+from RL.ambiguous_env import AmbiguousEnv
 import circopt_utils
 import csv
 
@@ -11,7 +11,7 @@ class QAgentSingleCore:
 
     def __init__(self, env, n_ep=20000, max_iter=100, exploration_proba=1, expl_decay=0.001, min_expl_proba=0.01,
                  gamma=0.99, lr=0.1):
-        self.env: CircuitEnvIdent = env
+        self.env: AmbiguousEnv = env
         self.n_episodes: int = n_ep
         self.max_iter_episode: int = max_iter
         self.exploration_proba: int = exploration_proba
@@ -24,9 +24,9 @@ class QAgentSingleCore:
         self.Q_table = np.zeros((2, 2))
         self.state_map = dict()
         self.action_map = dict()
-        #circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
+        circopt_utils.write_train_data(self.Q_table, self.state_map, self.action_map)
 
-        # self.Q_table, self.state_map, self.action_map = circopt_utils.read_train_data()
+        self.Q_table, self.state_map, self.action_map = circopt_utils.read_train_data()
 
     def train(self) -> None:
         """

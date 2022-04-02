@@ -1,4 +1,4 @@
-from RL.circuit_env_identities import CircuitEnvIdent
+from RL.ambiguous_env import AmbiguousEnv
 from RL.multi_env import SubprocVecEnv
 from RL.q_learning import QAgent
 from circuits.ioana_random import *
@@ -32,11 +32,12 @@ def benchmark_parallelisation():
     return
 
 
-def make_mp_envs(num_env, seed, circuits, moment_range=10, start_idx=0):
+def make_mp_envs(num_env, seed, circuits, start_idx=0, moment_range=10):
     def make_env(rank, circuit):
         def fn():
             starting_circuit = cirq.read_json(json_text=circuit[0])
-            env = CircuitEnvIdent(starting_circuit, circuit[1], moment_range)
+            # env = CircuitEnvIdent(starting_circuit, circuit[1], moment_range)
+            env = AmbiguousEnv(starting_circuit, circuit[1], moment_range=moment_range)
             env.seed(seed + rank)
             env.ep = -1
             return env
@@ -47,22 +48,23 @@ def make_mp_envs(num_env, seed, circuits, moment_range=10, start_idx=0):
 
 
 def run():
-    ep = 3000
+    ep = 10
     file_prefix = sys.argv[1]
-    batch_number = sys.argv[2]
-    moment_range = sys.argv[3]
-    random.seed(0)
+    batch_number = int(sys.argv[2])
+    moment_range = int(sys.argv[3])
+    # random.seed(0)
 
     circuits = []
-    for file in os.listdir('./train_circuits'):
-        if fnmatch.fnmatch(file, f'{file_prefix.upper()}_{batch_number}*.txt'):
-            f = open(f'train_circuits/{file}', 'r')
-            json_string = f.read()
-            circuits.append((json_string, file))
-            f.close()
+    for i in range(batch_number * 100 + 100):
+        for file in os.listdir('./train_circuits'):
+            if fnmatch.fnmatch(file, f'{file_prefix.upper()}_{i}.txt'):
+                f = open(f'train_circuits/{file}', 'r')
+                json_string = f.read()
+                circuits.append((json_string, file))
+                f.close()
 
-    vec_env = make_mp_envs(num_env=7, seed=random.randint(0, 15), circuits=circuits, moment_range=int(moment_range))
-    agent = QAgent(vec_env, n_ep=ep, max_iter=100, lr=0.01, gamma=0.97, expl_decay=0.001)
+    vec_env = make_mp_envs(num_env=100, seed=random.randint(0, 100), circuits=circuits, moment_range=moment_range)
+    agent = QAgent(vec_env, n_ep=ep, max_iter=35, lr=0.01, gamma=0.97, expl_decay=0.001)
     agent.train()
 
     # utils.plot_qt_size(eps, parts, exps, Q_Table_states, 's')
