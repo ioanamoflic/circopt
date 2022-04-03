@@ -50,12 +50,13 @@ def make_mp_envs(num_env, seed, circuits, start_idx=0, moment_range=10):
 def run():
     ep = 1500
     file_prefix = sys.argv[1]
-    batch_number = int(sys.argv[2])
-    moment_range = int(sys.argv[3])
+    start_from = int(sys.argv[2])
+    end_at = int(sys.argv[3])
+    moment_range = int(sys.argv[4])
     # random.seed(0)
 
     circuits = []
-    for i in range(batch_number * 10, batch_number * 10 + 10):
+    for i in range(start_from, end_at + 1):
         for file in os.listdir('./train_circuits'):
             if fnmatch.fnmatch(file, f'{file_prefix.upper()}_{i}.txt'):
                 f = open(f'train_circuits/{file}', 'r')
@@ -63,7 +64,7 @@ def run():
                 circuits.append((json_string, file))
                 f.close()
 
-    vec_env = make_mp_envs(num_env=10, seed=random.randint(0, 100), circuits=circuits, moment_range=moment_range)
+    vec_env = make_mp_envs(num_env=len(circuits), seed=random.randint(0, 100), circuits=circuits, moment_range=moment_range)
     agent = QAgent(vec_env, n_ep=ep, max_iter=35, lr=0.01, gamma=0.97, expl_decay=0.001)
     agent.train()
 
