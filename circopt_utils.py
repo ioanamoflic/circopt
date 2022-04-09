@@ -142,7 +142,7 @@ def plot_optimization_result(initial_circuit: cirq.Circuit, final_circuit: cirq.
 
     ax.bar(names, values)
     fig.savefig('evaluation.png', dpi=300)
-    #plt.show()
+    plt.show()
 
 
 def plot_reward_function():
