@@ -1,19 +1,21 @@
+from typing import List, Tuple
+
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
 import quantify.utils.misc_utils as mu
 
 
 class HadamardSquare(cirq.PointOptimizer):
-    def __init__(self, moment=None, qubit=None, only_count=False, count_between=False):
+    def __init__(self, moment=None, qubits=None, only_count=False, count_between=False):
         super().__init__()
-        self.only_count = only_count
-        self.count = 0
-        self.moment_index_qubit = []
-        self.moment = moment
-        self.qubit = qubit
-        self.start_moment = 0
-        self.end_moment = 0
-        self.count_between = count_between
+        self.only_count: bool = only_count
+        self.count: int = 0
+        self.moment_index_qubit: List[Tuple[int, int, List[cirq.Qid]]] = []
+        self.moment: int = moment
+        self.qubits: List[cirq.NamedQubit] = qubits
+        self.start_moment: int = 0
+        self.end_moment: int = 0
+        self.count_between: bool = count_between
 
     def optimization_at(self, circuit, index, op):
         if self.count_between and (index < self.start_moment or index > self.end_moment):
@@ -35,8 +37,11 @@ class HadamardSquare(cirq.PointOptimizer):
                 new_operations=[]
             )
 
-        if (index != self.moment or op.qubits[0] != self.qubit) and not self.only_count and not self.count_between:
+        if (index != self.moment or op.qubits[0] not in self.qubits) and not self.only_count and not self.count_between:
             return None
+
+        # if index != self.moment and not self.only_count and not self.count_between:
+        #     return None
 
         if mu.my_isinstance(op, cirq.H):
 
@@ -81,7 +86,7 @@ class HadamardSquare(cirq.PointOptimizer):
                             if self.only_count:
                                 self.count += 1
                                 self.moment_index_qubit.append(
-                                    (CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT.value, index, qubit)
+                                    (CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT.value, index, [control, target])
                                 )
                                 return None
 

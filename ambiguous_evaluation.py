@@ -1,4 +1,7 @@
 import copy
+from typing import List
+
+import cirq
 
 import circopt_utils as utils
 from circuits.ioana_random import *
@@ -112,71 +115,82 @@ def _get_gate_count(circuit) -> int:
     return counter
 
 
-def optimize(test_circuit, Q_Table, state_map, action_map, steps, moment_range):
+def optimize(test_circuit, Q_Table, state_map, action_map, moment_range, steps=10):
     initial_circuit = copy.deepcopy(test_circuit)
 
     for step in range(steps):
-        print(test_circuit)
+
+        print('Step: ', step)
+        drop_empty.optimize_circuit(test_circuit)
         apply_on, _ = get_all_possible_identities(test_circuit)
         current_states = _get_observation(circuit=test_circuit, moment_range=moment_range)
 
-        print(f'Step {step}')
-        print(f'States for circuit: {current_states}')
-        print(f'Gate count {_get_gate_count(circuit=test_circuit)}')
-        print(f'Length: {len(cirq.Circuit(test_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST))}')
+        # se itereaza fiecare stare din circuit
+        for i, state in enumerate(current_states):
+            print(
+                f'----------------------------------------------------------------------------------------------------')
+            print(f'State: {state}')
+            print(test_circuit)
+            print(f'States for circuit: {current_states}')
+            print(f'Gate count {_get_gate_count(circuit=test_circuit)}')
+            print(f'Length: {len(cirq.Circuit(test_circuit.all_operations(), strategy=cirq.InsertStrategy.EARLIEST))}')
+            print(f'Could apply on: {apply_on}')
 
-        opt_states = []
-        for state in current_states:
+            # daca starea curenta este in QTable
             if state in state_map.keys():
-                opt_states.append(state)
+                state_index = state_map[state]
 
-        state_index = state_map[opt_states[0]]
-        best_action = np.argmax(Q_Table[state_index, :])
-        action = None
+                # se cauta actiunea optima
+                best_action = np.argmax(Q_Table[state_index, :])
+                action = None
+                for key, value in action_map.items():
+                    if value == best_action:
+                        action = key
+                        break
 
-        for key, value in action_map.items():
-            if value == best_action:
-                action = key
+                print(f'Best action index: {best_action}, best action: {action} for state {state}')
 
-        print(f'Best action index: {best_action}, best action: {action}')
-        print(apply_on)
+                # daca identitatea trebuie aplicata ( = 1)
+                if action[3] == 1:
+                    index_list = []
 
-        index_list = [index for index, value in enumerate(apply_on)
-                      if value[0] == action[0]
-                      and value[1] // moment_range == action[1]
-                      # and value[2].name == action[2]
-                      ]
+                    # se cauta toate posibilele locatii in circuit in care se poate aplica
+                    for index, value in enumerate(apply_on):
+                        if value[0] == action[0] and cirq.NamedQubit(action[2]) in list(value[2])\
+                                and i * moment_range < value[1] < (i + 1) * moment_range:
+                            index_list.append(index)
 
-        print('Index list: ', index_list)
+                    print('Index list: ', index_list)
 
-        for index in index_list:
-            print('Match: ', apply_on[index])
+                    # daca nu s-a gasit nimic ce poate face match-ul in circuitul de test, se trece la starea urmatoare
+                    if len(index_list) == 0:
+                        print('No identity-action match found for current circuit and state.')
+                        continue
 
-        if len(index_list) == 0:
-            print('No identity match found for current circuit.')
-            utils.plot_optimization_result(initial_circuit, test_circuit)
-            return test_circuit
+                    # altfel, se itereaza toate starile si aplica identitatile
+                    for index in index_list:
+                        print(f'Match si index {index}: ', apply_on[index])
 
-        if len(index_list) > 0:
-            index = index_list[0]
-            identity = apply_on[index][0]
-            moment = apply_on[index][1]
-            qub = apply_on[index][2]
+                        identity: int = apply_on[index][0]
+                        moment: int = apply_on[index][1]
+                        qubits: List[cirq.NamedQubit] = apply_on[index][2]
 
-            for optimizer in working_optimizers.values():
-                optimizer.moment = moment
-                optimizer.qubit = qub
+                        for optimizer in working_optimizers.values():
+                            optimizer.moment = moment
+                            optimizer.qubits = qubits
 
-                if identity == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT.value:
-                    working_optimizers["hadamardsquare"].optimize_circuit(test_circuit)
+                            if identity == CircuitIdentity.DOUBLE_HADAMARD_LEFT_RIGHT.value:
+                                print(f'Optimising DOUBLE_HADAMARD_LEFT_RIGHT on moment {moment} and qubits {qubits}', )
+                                working_optimizers["hadamardsquare"].optimize_circuit(test_circuit)
 
-                elif identity == CircuitIdentity.CANCEL_CNOTS.value:
-                    working_optimizers["cancelcnots"].optimize_circuit(test_circuit)
+                            if identity == CircuitIdentity.CANCEL_CNOTS.value:
+                                working_optimizers["cancelcnots"].optimize_circuit(test_circuit)
 
-                elif identity == CircuitIdentity.CANCEL_HADAMARDS.value:
-                    working_optimizers["cancelh"].optimize_circuit(test_circuit)
+                            elif identity == CircuitIdentity.CANCEL_HADAMARDS.value:
+                                working_optimizers["cancelh"].optimize_circuit(test_circuit)
 
-        drop_empty.optimize_circuit(test_circuit)
+            else:
+                print('State not found in QTable!')
 
     utils.plot_optimization_result(initial_circuit, test_circuit)
 
@@ -186,8 +200,8 @@ def optimize(test_circuit, Q_Table, state_map, action_map, steps, moment_range):
 def run():
     filename = sys.argv[1]
     test_or_train = sys.argv[2]
-    steps = sys.argv[3]
-    moment_range = sys.argv[4]
+    steps = int(sys.argv[3])
+    moment_range = int(sys.argv[4])
 
     q, s, a = utils.read_train_data()
 
@@ -202,7 +216,7 @@ def run():
             test_circuit = cirq.read_json(json_text=json_string)
 
     if test_circuit is not None:
-        optimized_circuit = optimize(test_circuit, q, s, a, steps=int(steps), moment_range=int(moment_range))
+        optimized_circuit = optimize(test_circuit, q, s, a, moment_range=moment_range, steps=steps)
 
 
 if __name__ == '__main__':
