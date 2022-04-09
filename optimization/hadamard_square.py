@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 import cirq
 from optimization.optimize_circuits import CircuitIdentity
-import quantify.utils.misc_utils as mu
+from ..quantify.utils import misc_utils as mu
 
 
 class HadamardSquare(cirq.PointOptimizer):
